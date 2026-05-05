@@ -1,0 +1,127 @@
+---
+import SectionHeader from '../primitives/SectionHeader.astro';
+import Section from '../primitives/Section.astro';
+
+const steps = [
+  {
+    num: '01',
+    icon: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+    title: 'Point',
+    body: 'Hold your camera up to anything that catches your eye. A Vermeer in the Rijksmuseum, a sketch in a coffee-table book, a mural on the way to dinner.',
+  },
+  {
+    num: '02',
+    icon: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/>',
+    title: 'Discover',
+    body: 'Who painted it. When. Where it lives. The basics the wall label gives you, and quite a bit more.',
+  },
+  {
+    num: '03',
+    icon: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+    title: 'Explore',
+    body: 'Stay with it. Hear the artist\'s story. Trace the movement they belonged to. See what else they painted, and who they shaped after.',
+  },
+];
+---
+<Section background="white" id="how-it-works">
+  <SectionHeader
+    eyebrow="HOW IT WORKS"
+    headline="Three steps to every story"
+    subhead="Stop. Look. Let the story come to you."
+  />
+
+  <div class="steps">
+    {steps.map(step => (
+      <div class="step">
+        <span class="step__ghost" aria-hidden="true">{step.num}</span>
+        <div class="step__body">
+          <div class="step__icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <Fragment set:html={step.icon} />
+            </svg>
+          </div>
+          <h3 class="step__title">{step.title}</h3>
+          <p class="step__desc">{step.body}</p>
+        </div>
+      </div>
+    ))}
+  </div>
+</Section>
+
+<style>
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+    margin-top: 80px;
+  }
+
+  .step {
+    position: relative;
+    min-height: 340px;
+  }
+
+  .step__ghost {
+    position: absolute;
+    top: -20px;
+    left: -4px;
+    font-family: var(--font-serif);
+    font-size: var(--text-ghost-num);
+    font-weight: 500;
+    color: var(--color-border-subtle);
+    line-height: 1;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .step__body {
+    position: relative;
+    z-index: 1;
+    padding-top: 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .step__icon-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    background: #FBEFD9;
+    border-radius: 14px;
+    color: var(--color-accent);
+  }
+
+  .step__title {
+    font-family: var(--font-serif);
+    font-size: var(--text-step-title);
+    font-weight: 500;
+    letter-spacing: -0.4px;
+    line-height: 1.15;
+    margin: 0;
+  }
+
+  .step__desc {
+    font-size: var(--text-body-sm);
+    line-height: 1.6;
+    color: #3A3A3E;
+    margin: 0;
+  }
+
+  @media (max-width: 767px) {
+    .steps {
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .step {
+      min-height: auto;
+    }
+    .step__ghost {
+      right: 0;
+      left: auto;
+    }
+  }
+</style>

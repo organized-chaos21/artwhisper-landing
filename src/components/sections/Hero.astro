@@ -1,0 +1,157 @@
+---
+import Button from '../primitives/Button.astro';
+---
+<section class="hero" data-animate="section">
+  <div class="hero__inner">
+    <div class="hero__text">
+      <p class="hero__eyebrow">
+        <span class="dot" aria-hidden="true">&bull;</span>
+        ART WHISPER
+      </p>
+      <h1>Stand in front of any painting.<br />Walk away with its story.</h1>
+      <p class="hero__subhead">
+        The wall label gives you a name and a year. We pick up where it leaves off, with the artist's life, the hidden details, and the story most visitors walk right past.
+      </p>
+      <div class="hero__cta">
+        <Button href="https://play.google.com/store/apps/details?id=com.artwhisper.app&utm_source=landing&utm_medium=hero&utm_campaign=playstore">
+          Get the App
+        </Button>
+        <p class="hero__ios">Coming soon to iPhone</p>
+      </div>
+    </div>
+    <div class="hero__phone">
+      <img
+        src="/images/phones/hero-phone.png"
+        alt="Art Whisper app showing artwork identification on a phone screen"
+        width="308"
+        height="658"
+        loading="eager"
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    background: var(--color-bg-white);
+    padding: 0 var(--space-6);
+    /* Override the default section animation — hero has its own */
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .hero__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    padding: 100px 0;
+  }
+
+  .hero__text {
+    flex: 0 0 auto;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-eyebrow);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0;
+  }
+
+  .dot {
+    display: inline-block;
+    transform: translateY(-1px);
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-size: 56px;
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -2px;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  .hero__subhead {
+    font-size: var(--text-body-lg);
+    line-height: 1.55;
+    color: var(--color-text-secondary);
+    max-width: 560px;
+    margin: 0;
+  }
+
+  .hero__cta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .hero__ios {
+    font-size: var(--text-tagline);
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .hero__phone {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    position: relative;
+  }
+
+  .hero__phone img {
+    width: 308px;
+    height: auto;
+    filter: drop-shadow(-8px 14px 18px rgba(12, 12, 16, 0.15))
+            drop-shadow(-26px 38px 50px rgba(12, 12, 16, 0.1))
+            drop-shadow(-50px 78px 110px rgba(12, 12, 16, 0.05));
+  }
+
+  @media (max-width: 1023px) {
+    .hero__inner {
+      padding: 60px 0;
+      gap: 40px;
+    }
+    h1 { font-size: 44px; }
+    .hero__phone img { width: 260px; }
+  }
+
+  @media (max-width: 767px) {
+    .hero__inner {
+      flex-direction: column;
+      text-align: center;
+      padding: var(--space-20) 0;
+    }
+    h1 {
+      font-size: var(--text-hero-h);
+      letter-spacing: -1px;
+    }
+    .hero__subhead {
+      max-width: 100%;
+    }
+    .hero__eyebrow {
+      justify-content: center;
+    }
+    .hero__cta {
+      align-items: center;
+    }
+    .hero__phone {
+      order: -1;
+    }
+    .hero__phone img {
+      width: 220px;
+    }
+  }
+</style>

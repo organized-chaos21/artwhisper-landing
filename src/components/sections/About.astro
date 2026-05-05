@@ -1,0 +1,81 @@
+---
+
+---
+<section class="about" id="about" data-animate="section">
+  <div class="about__inner">
+    <h2>Art is for everyone</h2>
+    <p class="about__body">
+      Great art shouldn't require a degree. The stories behind it shouldn't sit behind museum labels or audio-guide rentals. Whether you're in the Louvre or noticing a mural on the way home, every painting has a story. We wrote it for you.
+    </p>
+    <div class="about__divider" aria-hidden="true"></div>
+    <p class="about__closing">
+      Built so the next time you visit a museum, you walk out with more than tired feet.
+    </p>
+  </div>
+</section>
+
+<style>
+  .about {
+    background: #FAFAF7;
+    padding: var(--space-30) var(--space-6);
+  }
+
+  .about__inner {
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
+  }
+
+  h2 {
+    font-family: var(--font-serif);
+    font-size: var(--text-section-h);
+    font-weight: 400;
+    line-height: var(--leading-snug);
+    margin: 0;
+  }
+
+  .about__body {
+    font-family: var(--font-serif);
+    font-size: var(--text-body-lg);
+    line-height: var(--leading-loose);
+    color: var(--color-text-warm-dark);
+    max-width: 680px;
+    margin: 0;
+  }
+
+  .about__divider {
+    width: 56px;
+    height: 1px;
+    background: var(--color-divider);
+    margin: 24px 0;
+  }
+
+  .about__closing {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: var(--leading-normal);
+    color: var(--color-text-secondary);
+    max-width: 560px;
+    margin: 0;
+  }
+
+  @media (max-width: 767px) {
+    .about__body {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .about__divider {
+      width: 32px;
+      margin: 16px 0;
+    }
+    .about__closing {
+      font-size: 14px;
+    }
+  }
+</style>

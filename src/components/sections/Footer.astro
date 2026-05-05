@@ -1,0 +1,171 @@
+---
+const year = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <a href="/" class="footer__logo" aria-label="Art Whisper — home">
+          <img src="/images/icons/logo.png" alt="" width="26" height="26" />
+          <span class="footer__logo-text">Art Whisper</span>
+        </a>
+        <p class="footer__tagline">Every painting has a story.</p>
+      </div>
+      <nav class="footer__links" aria-label="Footer navigation">
+        <a href="https://api.artwhisper.app/privacy" target="_blank" rel="noopener">Privacy Policy</a>
+        <span class="footer__separator" aria-hidden="true">&middot;</span>
+        <a href="mailto:hello@artwhisper.app">Contact</a>
+        <span class="footer__separator" aria-hidden="true">&middot;</span>
+        <a href="mailto:support@artwhisper.app">Support</a>
+      </nav>
+    </div>
+
+    <div class="footer__divider" aria-hidden="true"></div>
+
+    <div class="footer__bottom">
+      <p class="footer__copyright">&copy; {year} Art Whisper. All rights reserved.</p>
+      <div class="footer__social">
+        <a href="https://instagram.com/artwhisperapp" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="20" x="2" y="2" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/></svg>
+        </a>
+        <a href="https://x.com/artwhisperapp" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l11.733 16h4.267l-11.733 -16z"/><path d="M4 20l6.768 -6.768m2.46 -2.46l6.772 -6.772"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    background: #FBF6EE;
+    padding: 64px max(var(--space-6), calc((100% - var(--container-default)) / 2 + var(--space-6))) 48px;
+  }
+
+  .footer__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+  }
+
+  .footer__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .footer__brand {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .footer__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--color-text-primary);
+  }
+
+  .footer__logo:hover {
+    color: var(--color-text-primary);
+  }
+
+  .footer__logo img {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+  }
+
+  .footer__logo-text {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .footer__tagline {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .footer__links {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .footer__links a {
+    font-size: 15px;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .footer__links a:hover {
+    color: var(--color-accent);
+  }
+
+  .footer__separator {
+    color: var(--color-divider);
+    font-size: 15px;
+  }
+
+  .footer__divider {
+    width: 100%;
+    height: 1px;
+    background: var(--color-divider);
+    margin: 32px 0 24px;
+  }
+
+  .footer__bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer__copyright {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .footer__social {
+    display: flex;
+    gap: 16px;
+  }
+
+  .footer__social a {
+    color: var(--color-text-muted);
+    transition: color var(--duration-fast) var(--ease-out);
+  }
+
+  .footer__social a:hover {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 767px) {
+    .footer {
+      padding: 48px var(--space-6) 32px;
+    }
+    .footer__top {
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      text-align: center;
+    }
+    .footer__brand {
+      align-items: center;
+    }
+    .footer__links {
+      gap: 16px;
+    }
+    .footer__bottom {
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+  }
+</style>

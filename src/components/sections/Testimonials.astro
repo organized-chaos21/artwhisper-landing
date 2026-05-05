@@ -1,0 +1,92 @@
+---
+import SectionHeader from '../primitives/SectionHeader.astro';
+import Section from '../primitives/Section.astro';
+
+const cards = [
+  {
+    title: 'The 40-minute painting',
+    body: 'You walk into the Prado planning to glance at The Garden of Earthly Delights and move on. You stay forty minutes. For the first time, you actually see what\u2019s in it.',
+  },
+  {
+    title: 'The Tuesday morning mural',
+    body: 'You\u2019ve walked past the same mural every morning for a year. One rainy Tuesday you stop, point, and tap. The artist was a refugee. The story stays with you all week.',
+  },
+  {
+    title: 'The kid\u2019s question you can answer',
+    body: 'Your kid asks who made the giant statue at the V&A. You don\u2019t shrug. You both lean in. The next twenty minutes are the best part of the trip.',
+  },
+];
+---
+<Section background="white" id="testimonials">
+  <SectionHeader eyebrow="WHO IT'S FOR" headline="Three moments we built this for" />
+
+  <div class="testimonials__cards">
+    {cards.map(card => (
+      <div class="testimonial-card">
+        <p class="testimonial-card__title">{card.title}</p>
+        <p class="testimonial-card__body">{card.body}</p>
+      </div>
+    ))}
+  </div>
+
+  <p class="testimonials__closing">
+    Real reviews coming soon. Until then, this is who we made it for.
+  </p>
+</Section>
+
+<style>
+  .testimonials__cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 80px;
+  }
+
+  .testimonial-card {
+    padding: 40px;
+    background: var(--color-bg-cream-soft);
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .testimonial-card__title {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--text-card-title);
+    color: var(--color-text-warm-dark);
+    margin: 0;
+  }
+
+  .testimonial-card__body {
+    font-family: var(--font-serif);
+    font-size: var(--text-body-lg);
+    line-height: var(--leading-normal);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .testimonials__closing {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 16px;
+    color: var(--color-text-muted);
+    text-align: center;
+    margin-top: 64px;
+  }
+
+  @media (max-width: 1023px) {
+    .testimonials__cards { gap: 24px; }
+    .testimonial-card { padding: 28px; }
+  }
+
+  @media (max-width: 767px) {
+    .testimonials__cards {
+      grid-template-columns: 1fr;
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .testimonials__closing { margin-top: 40px; }
+  }
+</style>

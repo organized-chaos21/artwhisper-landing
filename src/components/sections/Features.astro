@@ -1,0 +1,163 @@
+---
+import Eyebrow from '../primitives/Eyebrow.astro';
+import SectionHeader from '../primitives/SectionHeader.astro';
+
+const features = [
+  {
+    eyebrow: 'EVERY PAINTING, NAMED',
+    heading: 'Know what you\'re looking at',
+    body: 'Hold your camera up to anything, or pull up a photo you\'ve already taken. A Botticelli in the Uffizi, a mural on a back street, a snapshot from last summer\'s trip. We tell you what it is, who made it, and what they were thinking when they did.',
+    image: '/images/phones/feature-1-identify.png',
+    alt: 'Art Whisper identifying a painting through the camera viewfinder',
+    imageRight: true,
+  },
+  {
+    eyebrow: 'ARTIST DEEP-DIVES',
+    heading: 'Meet the artist behind the masterpiece',
+    body: 'Caravaggio\'s bar fights. Frida\'s accident. Hokusai changing his name thirty times. The lives behind the work, from Renaissance masters to forgotten geniuses.',
+    image: '/images/phones/feature-2-artist.png',
+    alt: 'Art Whisper showing an artist biography and timeline',
+    imageRight: false,
+  },
+  {
+    eyebrow: 'AUDIO NARRATION',
+    heading: 'Listen, don\'t read',
+    body: 'Tap once, slip in your headphones. Every story is told the way a friend would tell it, not the way a textbook would read it. Listen while you look, and let the painting keep your eyes.',
+    image: '/images/phones/feature-3-audio.png',
+    alt: 'Art Whisper audio narration player in dark mode',
+    imageRight: true,
+  },
+  {
+    eyebrow: 'YOUR PERSONAL GALLERY',
+    heading: 'Save what moves you',
+    body: 'Build collections by trip, by mood, by century. Months later, the painting that stopped you in Madrid is still there, story and all.',
+    image: '/images/phones/feature-4-collections.png',
+    alt: 'Art Whisper collections screen showing saved artworks',
+    imageRight: false,
+  },
+];
+---
+<section class="features" id="features" data-animate="section">
+  <div class="features__inner">
+    <SectionHeader eyebrow="FEATURES" headline="Everything the wall label leaves out" />
+
+    <div class="features__list">
+      {features.map(f => (
+        <div class={`feature-row ${f.imageRight ? 'feature-row--img-right' : 'feature-row--img-left'}`}>
+          <div class="feature-row__text">
+            <Eyebrow>{f.eyebrow}</Eyebrow>
+            <h3>{f.heading}</h3>
+            <p>{f.body}</p>
+          </div>
+          <div class="feature-row__image">
+            <img src={f.image} alt={f.alt} width="320" height="680" loading="lazy" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .features {
+    background: var(--color-bg-cream);
+    padding: var(--space-30) var(--space-6);
+  }
+
+  .features__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+  }
+
+  .features__list {
+    display: flex;
+    flex-direction: column;
+    gap: 120px;
+    margin-top: 96px;
+  }
+
+  .feature-row {
+    display: flex;
+    align-items: center;
+    gap: 80px;
+  }
+
+  .feature-row--img-left {
+    flex-direction: row;
+  }
+
+  .feature-row--img-right {
+    flex-direction: row-reverse;
+  }
+
+  .feature-row__text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .feature-row__text :global(.eyebrow) {
+    margin-bottom: 0;
+  }
+
+  .feature-row__text h3 {
+    font-family: var(--font-serif);
+    font-size: var(--text-feature-h);
+    font-weight: 400;
+    line-height: var(--leading-snug);
+    margin: 0;
+  }
+
+  .feature-row__text p {
+    font-size: var(--text-body);
+    line-height: var(--leading-normal);
+    color: var(--color-text-secondary);
+    margin: 0;
+    margin-top: 8px;
+  }
+
+  .feature-row__image {
+    flex: 0 0 380px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .feature-row__image img {
+    width: 320px;
+    height: auto;
+    filter: drop-shadow(-8px 14px 18px rgba(12, 12, 16, 0.12))
+            drop-shadow(-20px 30px 40px rgba(12, 12, 16, 0.08));
+  }
+
+  @media (max-width: 1023px) {
+    .features__list { gap: 80px; margin-top: 64px; }
+    .feature-row { gap: 48px; }
+    .feature-row__image { flex: 0 0 280px; }
+    .feature-row__image img { width: 280px; }
+  }
+
+  @media (max-width: 767px) {
+    .features__list { gap: 80px; margin-top: 64px; }
+
+    .feature-row,
+    .feature-row--img-left,
+    .feature-row--img-right {
+      flex-direction: column;
+      gap: 40px;
+    }
+
+    .feature-row__image {
+      flex: none;
+      order: 1;
+    }
+
+    .feature-row__text {
+      order: 0;
+    }
+
+    .feature-row__image img {
+      width: 240px;
+    }
+  }
+</style>

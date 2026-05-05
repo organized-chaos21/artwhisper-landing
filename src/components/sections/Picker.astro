@@ -1,0 +1,224 @@
+---
+
+---
+<section class="picker" id="picker" data-animate="section">
+  <div class="picker__inner">
+    <h2 class="picker__headline">Where will you use it?</h2>
+
+    <div class="picker__cards" role="radiogroup" aria-label="Choose how you'll use Art Whisper">
+      <button class="picker-card picker-card--selected" role="radio" aria-checked="true" data-picker="museum">
+        <span class="picker-card__emoji" aria-hidden="true">🏛️</span>
+        <span class="picker-card__title">At a museum</span>
+        <span class="picker-card__desc">Make every wall worth the ticket</span>
+      </button>
+      <button class="picker-card" role="radio" aria-checked="false" data-picker="trip">
+        <span class="picker-card__emoji" aria-hidden="true">✈️</span>
+        <span class="picker-card__title">On a trip abroad</span>
+        <span class="picker-card__desc">Be ready before you walk in</span>
+      </button>
+      <button class="picker-card" role="radio" aria-checked="false" data-picker="city">
+        <span class="picker-card__emoji" aria-hidden="true">🌆</span>
+        <span class="picker-card__title">Out in the city</span>
+        <span class="picker-card__desc">Murals, sculptures, sketches in books</span>
+      </button>
+      <button class="picker-card" role="radio" aria-checked="false" data-picker="curious">
+        <span class="picker-card__emoji" aria-hidden="true">🎨</span>
+        <span class="picker-card__title">Just curious</span>
+        <span class="picker-card__desc">Browse and find what catches your eye</span>
+      </button>
+    </div>
+
+    <div class="picker__response" aria-live="polite">
+      <svg class="picker__response-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+      <p class="picker__response-text" data-response="museum">Keep scrolling. See what unfolds when you point your camera at any painting.</p>
+      <p class="picker__response-text" data-response="trip" hidden>Save what you find. Your collection comes home with you, story and all.</p>
+      <p class="picker__response-text" data-response="city" hidden>Headphones are your move. The painting's on the wall, the voice tells the rest.</p>
+      <p class="picker__response-text" data-response="curious" hidden>Start at the bottom. Eight paintings, eight rabbit holes, no commitment.</p>
+    </div>
+
+    <p class="picker__upload-line">
+      Or upload a photo you've already taken. Art Whisper works on those too.
+    </p>
+  </div>
+</section>
+
+<style>
+  .picker {
+    background: var(--color-bg-cream);
+    padding: var(--space-30) var(--space-6);
+  }
+
+  .picker__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+
+  .picker__headline {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    line-height: var(--leading-tight);
+    text-align: center;
+    margin: 0;
+  }
+
+  .picker__cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    width: 100%;
+  }
+
+  .picker-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: rgba(12, 12, 16, 0.03);
+    border: 1px solid rgba(12, 12, 16, 0.08);
+    border-radius: 16px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      background var(--duration-fast) var(--ease-out);
+  }
+
+  .picker-card:hover {
+    background: rgba(212, 136, 44, 0.06);
+    border-color: rgba(212, 136, 44, 0.3);
+  }
+
+  .picker-card--selected {
+    background: rgba(212, 136, 44, 0.08);
+    border: 2px solid var(--color-accent-hover);
+  }
+
+  .picker-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .picker-card__emoji {
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .picker-card__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    letter-spacing: -0.2px;
+  }
+
+  .picker-card__desc {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    line-height: var(--leading-normal);
+  }
+
+  .picker__response {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 24px;
+    background: rgba(212, 136, 44, 0.06);
+    border: 1px solid rgba(212, 136, 44, 0.2);
+    border-radius: 14px;
+    width: 100%;
+  }
+
+  .picker__response-icon {
+    flex-shrink: 0;
+    color: var(--color-accent-hover);
+  }
+
+  .picker__response-text {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.55;
+    color: var(--color-text-primary);
+    margin: 0;
+  }
+
+  .picker__upload-line {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--color-text-muted);
+    text-align: center;
+    line-height: var(--leading-normal);
+    max-width: 560px;
+    margin: 0;
+  }
+
+  @media (max-width: 767px) {
+    .picker__cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .picker__headline {
+      font-size: 28px;
+    }
+  }
+
+  @media (max-width: 479px) {
+    .picker__cards {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  const cards = document.querySelectorAll('.picker-card');
+  const responses = document.querySelectorAll('.picker__response-text');
+
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      // Update selection state
+      cards.forEach(c => {
+        c.classList.remove('picker-card--selected');
+        c.setAttribute('aria-checked', 'false');
+      });
+      card.classList.add('picker-card--selected');
+      card.setAttribute('aria-checked', 'true');
+
+      // Show matching response
+      const key = card.dataset.picker;
+      responses.forEach(r => {
+        r.hidden = r.dataset.response !== key;
+      });
+
+      // Persist selection
+      try { sessionStorage.setItem('picker', key); } catch (e) {}
+    });
+
+    // Keyboard: arrow keys navigate between cards
+    card.addEventListener('keydown', (e) => {
+      const cardArr = Array.from(cards);
+      const idx = cardArr.indexOf(card);
+      let next = -1;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % cardArr.length;
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + cardArr.length) % cardArr.length;
+      if (next >= 0) {
+        e.preventDefault();
+        cardArr[next].focus();
+        cardArr[next].click();
+      }
+    });
+  });
+
+  // Restore from sessionStorage
+  try {
+    const saved = sessionStorage.getItem('picker');
+    if (saved) {
+      const card = document.querySelector(`[data-picker="${saved}"]`);
+      if (card) card.click();
+    }
+  } catch (e) {}
+</script>

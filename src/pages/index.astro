@@ -1,14 +1,50 @@
 ---
 import BaseLayout from '../components/layout/BaseLayout.astro';
+import Header from '../components/sections/Header.astro';
+import Hero from '../components/sections/Hero.astro';
+import Picker from '../components/sections/Picker.astro';
+import HowItWorks from '../components/sections/HowItWorks.astro';
+import Features from '../components/sections/Features.astro';
+import Testimonials from '../components/sections/Testimonials.astro';
+import About from '../components/sections/About.astro';
+import ContentGrid from '../components/sections/ContentGrid.astro';
+import FAQ from '../components/sections/FAQ.astro';
+import DownloadCTA from '../components/sections/DownloadCTA.astro';
+import Footer from '../components/sections/Footer.astro';
 import '../styles/reset.css';
 import '../styles/tokens.css';
 import '../styles/globals.css';
 import '../styles/motion.css';
 ---
 <BaseLayout>
+  <Header />
   <main id="main">
-    <p style="padding: 4rem; text-align: center; font-family: var(--font-serif); font-size: var(--text-section-h);">
-      Art Whisper Landing Page
-    </p>
+    <Hero />
+    <Picker />
+    <HowItWorks />
+    <Features />
+    <Testimonials />
+    <About />
+    <ContentGrid />
+    <FAQ />
+    <DownloadCTA />
   </main>
+  <Footer />
+
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      { "@type": "Question", "name": "Do I need to create an account?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. A free Art Whisper account lets us save your discoveries across devices and keeps your personal gallery private to you. Sign in takes a few seconds with Google, Facebook, or email." } },
+      { "@type": "Question", "name": "Does it work without an internet connection?", "acceptedAnswer": { "@type": "Answer", "text": "Art Whisper needs a connection to identify paintings and pull up their stories. Most museums have decent wifi these days, and 4G usually works fine inside galleries. We're working on offline support for saved artworks down the road." } },
+      { "@type": "Question", "name": "What if it can't identify the painting I'm looking at?", "acceptedAnswer": { "@type": "Answer", "text": "It happens, especially with smaller galleries or lesser-known works. When it does, you can try again from a different angle, or submit the photo for our team to look at. Manual reviews aren't real-time, but next time you open the app, the answer might be waiting." } },
+      { "@type": "Question", "name": "Does it only work in museums?", "acceptedAnswer": { "@type": "Answer", "text": "Not at all. Art Whisper works on any visual art you point your camera at: sculptures, prints in books, postcards, posters in a hotel hallway, murals on the street. If it has a story, we want to tell it." } },
+      { "@type": "Question", "name": "Do I have to be in front of the artwork to use it?", "acceptedAnswer": { "@type": "Answer", "text": "No. You can point your camera at a painting in the moment, or upload a photo you've already taken. Both work the same way. Useful when you remember a painting from last year's trip but never caught its name." } },
+      { "@type": "Question", "name": "What about my privacy? Where do my photos go?", "acceptedAnswer": { "@type": "Answer", "text": "The photo you scan goes to our servers to identify the artwork, then is deleted once it's processed. If we can't recognize it, we may keep the photo for up to thirty days to improve our accuracy, then delete it permanently. Location is optional. If you grant it, we use it to show you what's nearby. We don't sell your data to anyone, ever." } },
+      { "@type": "Question", "name": "When will it be on iPhone?", "acceptedAnswer": { "@type": "Answer", "text": "We're working on it. Android is live now; iOS is in development and we're aiming for later this year." } },
+      { "@type": "Question", "name": "What languages does it work in?", "acceptedAnswer": { "@type": "Answer", "text": "English at launch, with more languages on the way as our community grows." } },
+      { "@type": "Question", "name": "I run a museum or gallery. Can we work together?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. We'd love to talk. Drop a note to partnerships@artwhisper.app and we'll be in touch." } },
+      { "@type": "Question", "name": "How is the audio narration made?", "acceptedAnswer": { "@type": "Answer", "text": "Each story is written and produced specifically for the app. Not lifted from a textbook, not recycled from somewhere else. The goal is what you'd hear from a friend who happens to be a curator: warm, accurate, never dry." } },
+    ]
+  })} />
 </BaseLayout>

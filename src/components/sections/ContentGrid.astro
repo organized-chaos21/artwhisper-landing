@@ -1,0 +1,114 @@
+---
+import SectionHeader from '../primitives/SectionHeader.astro';
+import Section from '../primitives/Section.astro';
+
+const paintings = [
+  { title: 'The Kiss', artist: 'Gustav Klimt', movement: 'Symbolism', image: '/images/paintings/the-kiss.jpeg' },
+  { title: 'The Starry Night', artist: 'Vincent van Gogh', movement: 'Post-Impressionism', image: '/images/paintings/starry-night.jpeg' },
+  { title: 'Girl with a Pearl Earring', artist: 'Johannes Vermeer', movement: 'Dutch Golden Age', image: '/images/paintings/girl-pearl-earring.jpeg' },
+  { title: 'The Great Wave', artist: 'Katsushika Hokusai', movement: 'Ukiyo-e', image: '/images/paintings/great-wave.jpeg' },
+  { title: 'The Birth of Venus', artist: 'Sandro Botticelli', movement: 'Renaissance', image: '/images/paintings/birth-of-venus.jpeg' },
+  { title: 'The Persistence of Memory', artist: 'Salvador Dalí', movement: 'Surrealism', image: '/images/paintings/persistence-of-memory.jpeg' },
+  { title: 'The Scream', artist: 'Edvard Munch', movement: 'Expressionism', image: '/images/paintings/the-scream.jpeg' },
+  { title: 'Self-Portrait with Thorn Necklace', artist: 'Frida Kahlo', movement: 'Surrealism', image: '/images/paintings/frida-self-portrait.jpeg' },
+];
+---
+<Section background="white" id="explore">
+  <SectionHeader
+    eyebrow="EXPLORE"
+    headline="Every painting has more to tell"
+    subhead="Eight you've seen on postcards. Many more inside."
+  />
+
+  <div class="grid">
+    {paintings.map((p, i) => (
+      <div class="tile">
+        <div class="tile__image">
+          <img
+            src={p.image}
+            alt={`${p.title} by ${p.artist}`}
+            width="400"
+            height="400"
+            loading={i < 4 ? 'eager' : 'lazy'}
+          />
+        </div>
+        <h3 class="tile__title">{p.title}</h3>
+        <p class="tile__artist">{p.artist}</p>
+        <span class="tile__tag">{p.movement}</span>
+      </div>
+    ))}
+  </div>
+</Section>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px;
+    row-gap: 56px;
+    margin-top: 80px;
+  }
+
+  .tile {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .tile__image {
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 8px;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .tile__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tile__title {
+    font-family: var(--font-serif);
+    font-size: var(--text-card-title);
+    font-weight: 500;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .tile__artist {
+    font-size: 14px;
+    color: var(--color-text-tertiary);
+    margin: -10px 0 0 0;
+  }
+
+  .tile__tag {
+    display: inline-block;
+    align-self: flex-start;
+    padding: 6px 12px;
+    background: var(--color-bg-cream);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: var(--tracking-tag);
+    color: var(--color-text-warm-dark);
+    border-radius: 4px;
+  }
+
+  @media (max-width: 1023px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      row-gap: 40px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      row-gap: 40px;
+      margin-top: 56px;
+    }
+  }
+</style>
