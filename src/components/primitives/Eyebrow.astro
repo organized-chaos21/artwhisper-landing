@@ -1,0 +1,25 @@
+---
+
+---
+<p class="eyebrow">
+  <span class="dot" aria-hidden="true">&bull;</span>
+  <slot />
+</p>
+
+<style>
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-eyebrow);
+    font-weight: var(--weight-medium);
+    letter-spacing: var(--tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin: 0;
+  }
+  .dot {
+    display: inline-block;
+    transform: translateY(-1px);
+  }
+</style>

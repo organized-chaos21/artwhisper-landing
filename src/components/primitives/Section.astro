@@ -1,0 +1,32 @@
+---
+const { background = 'white', id, narrow = false } = Astro.props;
+---
+<section
+  class={`section section--${background} ${narrow ? 'section--narrow' : ''}`}
+  id={id}
+  data-animate="section"
+>
+  <div class="section__inner">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .section {
+    padding: var(--space-30) var(--space-6);
+    position: relative;
+  }
+  .section--white {
+    background: var(--color-bg-white);
+  }
+  .section--cream {
+    background: var(--color-bg-cream);
+  }
+  .section__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+  }
+  .section--narrow .section__inner {
+    max-width: var(--container-narrow);
+  }
+</style>

@@ -1,0 +1,31 @@
+---
+import Eyebrow from './Eyebrow.astro';
+
+const { eyebrow, headline, subhead } = Astro.props;
+---
+<header class="section-header">
+  {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
+  <h2>{headline}</h2>
+  {subhead && <p class="subhead">{subhead}</p>}
+</header>
+
+<style>
+  .section-header {
+    text-align: center;
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+  }
+  .section-header :global(.eyebrow) {
+    margin-bottom: var(--space-4);
+  }
+  h2 {
+    font-size: var(--text-section-h);
+    margin: 0;
+  }
+  .subhead {
+    font-size: var(--text-body-lg);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-5);
+    line-height: var(--leading-normal);
+  }
+</style>

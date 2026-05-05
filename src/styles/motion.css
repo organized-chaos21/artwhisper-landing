@@ -1,0 +1,43 @@
+/* Sections start invisible and slightly below their final position */
+[data-animate="section"] {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity var(--duration-slow) var(--ease-out),
+    transform var(--duration-slow) var(--ease-out);
+  will-change: opacity, transform;
+}
+
+/* When the section enters the viewport, it animates in */
+[data-animate="section"].is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hero is special — animates on page load, not on scroll */
+.hero[data-animate="section"] {
+  opacity: 1;
+  transform: none;
+  animation: heroEntrance var(--duration-slower) var(--ease-out) both;
+}
+
+@keyframes heroEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion: disable everything */
+@media (prefers-reduced-motion: reduce) {
+  [data-animate="section"] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: none;
+  }
+}

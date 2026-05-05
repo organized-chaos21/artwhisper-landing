@@ -1,0 +1,42 @@
+---
+const { title = "Art Whisper — Stand in front of any painting. Walk away with its story." } = Astro.props;
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="The wall label gives you a name and a year. We pick up where it leaves off: the artist's life, the hidden details, and the story most visitors walk right past." />
+
+  <title>{title}</title>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Art Whisper — Stand in front of any painting. Walk away with its story." />
+  <meta property="og:description" content="Every painting has a story. Art Whisper tells it." />
+  <meta property="og:image" content="https://artwhisper.app/og-image.png" />
+  <meta property="og:url" content="https://artwhisper.app" />
+  <meta property="og:type" content="website" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://artwhisper.app/og-image.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to content</a>
+  <slot />
+
+  <script>
+    import { initSectionAnimations, initStickyHeader } from '../../lib/motion.js';
+    initSectionAnimations();
+    initStickyHeader();
+  </script>
+</body>
+</html>
