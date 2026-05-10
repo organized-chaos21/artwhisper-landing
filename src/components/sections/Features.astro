@@ -26,6 +26,7 @@ const features = [
     image: '/images/phones/feature-3-audio.png',
     alt: 'Art Whisper audio narration player in dark mode',
     imageRight: true,
+    audioButton: true,
   },
   {
     eyebrow: 'YOUR PERSONAL GALLERY',
@@ -48,6 +49,12 @@ const features = [
             <Eyebrow>{f.eyebrow}</Eyebrow>
             <h3>{f.heading}</h3>
             <p>{f.body}</p>
+            {f.audioButton && (
+              <button class="audio-sample-btn" type="button">
+                <svg class="audio-sample-btn__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>
+                <span>Hear a 30-second sample · Starry Night, narrated for you</span>
+              </button>
+            )}
           </div>
           <div class="feature-row__image">
             <img src={f.image} alt={f.alt} width="320" height="680" loading="lazy" />
@@ -159,5 +166,33 @@ const features = [
     .feature-row__image img {
       width: 240px;
     }
+  }
+
+  .audio-sample-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(212, 136, 44, 0.06);
+    border: 1px solid rgba(212, 136, 44, 0.2);
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--color-text-primary);
+    text-align: left;
+    transition: background var(--duration-fast) var(--ease-out);
+    margin-top: 8px;
+  }
+
+  .audio-sample-btn:hover {
+    background: rgba(212, 136, 44, 0.12);
+  }
+
+  .audio-sample-btn__icon {
+    flex-shrink: 0;
+    color: var(--color-accent-hover);
   }
 </style>
