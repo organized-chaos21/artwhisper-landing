@@ -1,8 +1,2 @@
-# Short link to Play Store with UTM tracking
-/get https://play.google.com/store/apps/details?id=com.artwhisper.app&utm_source=landing&utm_medium=qr&utm_campaign=getlink 302
-
-# Direct link to privacy policy
-/privacy https://api.artwhisper.app/privacy 301
-
 # www to apex redirect
 https://www.artwhisper.app/* https://artwhisper.app/:splat 301

@@ -1,0 +1,294 @@
+---
+import BaseLayout from '../components/layout/BaseLayout.astro';
+import Header from '../components/sections/Header.astro';
+import Footer from '../components/sections/Footer.astro';
+import '../styles/reset.css';
+import '../styles/tokens.css';
+import '../styles/globals.css';
+import '../styles/motion.css';
+---
+<BaseLayout title="Privacy Policy — Art Whisper">
+  <Header />
+  <main id="main" class="legal">
+    <div class="legal__inner">
+
+      <h1>Privacy Policy</h1>
+      <p class="legal__updated">Last updated: May 25, 2026</p>
+
+      <p>Art Whisper ("we", "us", "our") is operated by <strong>Bright Star</strong>, a company registered in the State of Israel. We provide a museum companion app that helps you identify artworks from photos. This policy explains what data we collect, how we use it, and your rights.</p>
+
+      <hr />
+
+      <h2>1. Information We Collect</h2>
+
+      <h3>Account information</h3>
+      <p>When you sign up, we collect your name and email address via Google Sign-In, Apple Sign-In, Facebook Login, or email/password registration. This information is used for authentication and displaying your profile.</p>
+
+      <h3>Photos you scan or upload</h3>
+      <p>When you scan an artwork or placard, or upload a photo of an artwork from your device, the photo is sent to our servers for identification. The handling described in this section applies identically to both methods.</p>
+      <p>To improve our recognition accuracy, some unrecognized photos are automatically retained for up to 30 days and permanently deleted once reviewed — this process does not intentionally collect personally identifiable information, and photos may be reviewed by our team or automated systems. Additionally, you may be offered the option to voluntarily submit an unrecognized photo for review — submitted photos are analyzed and then permanently deleted within 30 days.</p>
+      <p>Photos uploaded from your device may contain embedded metadata (also called EXIF data) such as GPS location, timestamp, camera model, and editing history. We automatically strip this metadata from uploaded photos before processing; we do not extract, store, or use it for any purpose.</p>
+
+      <h3>Location (optional)</h3>
+      <p>If you grant permission, we use your precise GPS coordinates to detect nearby museums and provide context-aware results, such as museum-specific featured artworks and improved scan accuracy. Your coordinates are stored as part of your scan history for service improvement and diagnostics. Upon account deletion, the link between your location data and your account is severed and the de-identified data is retained for service improvement. The app works fully without location access.</p>
+
+      <h3>Usage data</h3>
+      <p>We collect analytics events to improve the app. These events may be linked to your account for internal service improvement purposes and are not used for advertising or sold to third parties.</p>
+
+      <h3>Error reports</h3>
+      <p>If the app crashes, an automatic error report is sent containing technical information (stack trace, device model, OS version). Error reports are configured to minimize personal information; any incidental personal data is processed solely for diagnostic purposes.</p>
+
+      <h3>Purchase and entitlement data</h3>
+      <p>When you purchase a Scan Pack through the Apple App Store or Google Play Store, we receive from the applicable platform: a transaction identifier, original transaction identifier (used for purchase restoration), product identifier, purchase timestamp, and validated receipt data. We do not receive or store payment card numbers, full billing addresses, or other financial account information. We maintain on our servers a record of your Scan Balance, scans consumed, and purchase history associated with your account.</p>
+
+      <h3>Anti-fraud signals</h3>
+      <p>To enforce the one-account-per-individual policy and prevent abuse of Free Scans, we may collect and process device identifiers (such as IDFV on iOS, Android Advertising ID where permitted), approximate IP-derived location at signup, authentication provider identifiers, and patterns of usage that may indicate automated or fraudulent activity.</p>
+
+      <hr />
+
+      <h2>2. How We Use Your Data</h2>
+      <ul>
+        <li>Identify artworks from your camera photos or uploaded photos</li>
+        <li>Show nearby museum context when location is available</li>
+        <li>Maintain your personal collections and scan history</li>
+        <li>Improve the app through usage analytics</li>
+        <li>Diagnose and fix bugs through error reports</li>
+        <li>Validate Scan Pack purchases with Apple and Google</li>
+        <li>Track and update your Scan Balance</li>
+        <li>Detect and prevent fraudulent activity, including duplicate accounts</li>
+        <li>Provide customer support relating to purchases</li>
+        <li>Comply with applicable tax, accounting, and legal obligations</li>
+      </ul>
+
+      <hr />
+
+      <h2>3. Communications</h2>
+      <p>We send you transactional emails necessary for the operation of the Service, including purchase confirmations, security and account notifications, important policy updates, responses to your inquiries, and other Service-related notices. These communications are part of the Service and cannot be opted out of while your Account remains active.</p>
+      <p>Where required by applicable law, we will obtain your separate consent before sending you marketing communications (such as product announcements, feature updates, or promotional offers). You may withdraw your consent to marketing communications at any time by following the unsubscribe instructions in any such email or by contacting us at <strong>privacy@artwhisper.app</strong>. Withdrawing consent to marketing communications does not affect the transactional and Service-related communications described above.</p>
+
+      <hr />
+
+      <h2>4. Third-Party Services</h2>
+      <p>We use the following categories of third-party service providers to operate Art Whisper:</p>
+      <ul>
+        <li><strong>Authentication providers</strong> — for account login and identity verification.</li>
+        <li><strong>AI image processing providers, located in the United States</strong> — when you scan or upload a photo, it is sent to these providers solely for the purpose of artwork identification on our instruction. They do not retain your data for their own purposes, do not use it to train their models, and delete it after a short period (typically up to 30 days) required for safety monitoring.</li>
+        <li><strong>Hosting and infrastructure providers</strong> — for application hosting, content delivery, and DNS routing.</li>
+        <li><strong>Product analytics provider</strong> — for service usage analytics.</li>
+        <li><strong>Error and crash monitoring provider</strong> — for diagnostics.</li>
+        <li><strong>Transactional email provider</strong> — for account-related and service emails.</li>
+        <li><strong>Payment processors</strong> — Apple Inc. and Google LLC process all in-app purchases through the Apple App Store and Google Play Store, respectively.</li>
+      </ul>
+      <p>We do not sell your personal data to any third party.</p>
+
+      <hr />
+
+      <h2>5. Legal Basis for Processing</h2>
+      <p>We process your data based on:</p>
+      <ul>
+        <li><strong>Performance of contract</strong> for account, scans, and purchases (GDPR Art. 6(1)(b))</li>
+        <li><strong>Your consent</strong> for location data and marketing communications (Art. 6(1)(a))</li>
+        <li><strong>Legitimate interest</strong> in improving the service, securing the app, and preventing fraud (Art. 6(1)(f))</li>
+        <li><strong>Compliance with legal obligation</strong> where applicable (Art. 6(1)(c))</li>
+      </ul>
+
+      <hr />
+
+      <h2>6. International Data Transfers</h2>
+      <p>Some of our service providers, including providers of AI image processing, analytics, and error monitoring, are located in the United States. Transfers of personal data outside of the European Economic Area, United Kingdom, or other jurisdictions with their own data protection laws are made under appropriate safeguards permitted by Chapter V of the GDPR, including the <strong>Standard Contractual Clauses (SCCs)</strong> approved by the European Commission. For data processed by Bright Star in Israel, transfers from the EU benefit from the European Commission's adequacy decision for Israel.</p>
+
+      <hr />
+
+      <h2>7. Data Retention</h2>
+      <p>We retain different categories of data for different periods, as set out below:</p>
+      <div class="legal__table-wrap">
+        <table>
+          <thead>
+            <tr><th>Data Category</th><th>Retention Period</th><th>Reason</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Account information</td><td>Until account deletion</td><td>Service provision</td></tr>
+            <tr><td>Scanned/uploaded photos (recognized)</td><td>Deleted after processing</td><td>Processing only</td></tr>
+            <tr><td>Unrecognized photos</td><td>Up to 30 days, then permanently deleted</td><td>Service improvement</td></tr>
+            <tr><td>Photo metadata (EXIF)</td><td>Stripped before processing — not retained</td><td>N/A</td></tr>
+            <tr><td>Scan history</td><td>While account is active</td><td>User reference and service improvement</td></tr>
+            <tr><td>Location data</td><td>While account is active; linkability severed upon account deletion</td><td>Service provision</td></tr>
+            <tr><td>Analytics and diagnostics</td><td>Retained in de-identified form</td><td>Service improvement</td></tr>
+            <tr><td>Purchase and transaction records</td><td>The longer of 7 years from transaction OR account lifetime + 1 year</td><td>Israeli tax and accounting compliance</td></tr>
+            <tr><td>Anti-fraud signals</td><td>While account is active</td><td>Abuse prevention</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr />
+
+      <h2>8. Your Rights</h2>
+      <ul>
+        <li><strong>Access your data.</strong> You can request a copy of the personal data we hold about you.</li>
+        <li><strong>Correct your data.</strong> You can request correction of inaccurate personal data.</li>
+        <li><strong>Delete your account.</strong> You can delete your account from the Settings screen. Upon deletion, your profile, collections, and account-linked personal data are erased within 30 days. We retain de-identified scan analytics for service improvement, where the link to you has been severed.</li>
+        <li><strong>Data portability.</strong> You can request your data in a portable, machine-readable format.</li>
+        <li><strong>Object to processing.</strong> You can object to our processing of your data based on legitimate interests (such as analytics).</li>
+        <li><strong>Withdraw consent.</strong> Where we process your data based on your consent — such as precise location or marketing communications — you have the right to withdraw that consent at any time by revoking the relevant permission in your device settings or unsubscribing from marketing emails. Withdrawal of consent does not affect the lawfulness of processing carried out before withdrawal.</li>
+        <li><strong>Revoke permissions.</strong> You can revoke camera, photo library, or location permissions at any time through your device settings.</li>
+        <li><strong>Lodge a complaint.</strong> You have the right to lodge a complaint with your local data protection authority. Users in Israel may contact the Privacy Protection Authority.</li>
+      </ul>
+      <p>To exercise any of these rights, contact us at <strong>privacy@artwhisper.app</strong>.</p>
+
+      <hr />
+
+      <h2>9. Children's Privacy</h2>
+      <p>Art Whisper is not directed at children under 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe we have collected such information, please contact us and we will promptly delete it.</p>
+      <p>For users in the European Economic Area, the United Kingdom, or other jurisdictions where the digital age of consent is above 13, users under that local age may use Art Whisper only with the consent of a parent or guardian. Where required by local law, users under 16 (or the applicable local age of consent) must confirm they have parental consent at signup.</p>
+      <p>In-app purchases by minors must be made with parental authorization. Apple's Family Sharing with Ask to Buy and Google's Family Library provide the operative parental controls. We rely on these platform-level mechanisms for parental consent verification for in-app transactions.</p>
+
+      <hr />
+
+      <h2>10. Security</h2>
+      <p>All data is transmitted over encrypted HTTPS connections. We maintain industry-standard security practices including access controls, encryption at rest where applicable, and ongoing security monitoring. Authentication is handled by an industry-standard third-party authentication provider with established security practices.</p>
+
+      <hr />
+
+      <h2>11. Israeli Privacy Protection Law</h2>
+      <p>In addition to the GDPR-related rights described above, users in Israel have rights under the Israeli Privacy Protection Law 5741-1981, including the right to access and correct personal data held in our database. To exercise these rights, please contact us using the details below.</p>
+
+      <hr />
+
+      <h2>12. Changes to This Policy</h2>
+      <p>We may update this policy from time to time. The "last updated" date at the top will reflect any changes. We will notify you of material changes through the app or by email. Continued use of the app after non-material changes constitutes acceptance of the updated policy.</p>
+
+      <hr />
+
+      <h2>13. Contact Us</h2>
+      <p>If you have questions about this privacy policy or your data, contact us at:</p>
+      <p>
+        <strong>Bright Star</strong><br />
+        9 Ezra Hasofer St., Herzliya, Israel
+      </p>
+      <ul class="legal__contact">
+        <li><strong>Privacy inquiries:</strong> privacy@artwhisper.app</li>
+        <li><strong>General support:</strong> support@artwhisper.app</li>
+      </ul>
+
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>
+
+<style>
+  .legal {
+    background: var(--color-bg-white);
+    padding: 120px max(var(--space-6), calc((100% - var(--container-narrow)) / 2 + var(--space-6))) 80px;
+  }
+
+  .legal__inner {
+    max-width: var(--container-narrow);
+    margin: 0 auto;
+  }
+
+  .legal__inner h1 {
+    font-family: var(--font-serif);
+    font-size: var(--text-section-h);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-primary);
+    line-height: var(--leading-tight);
+    margin: 0 0 8px;
+  }
+
+  .legal__updated {
+    font-family: var(--font-sans);
+    font-size: var(--text-body-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 32px;
+  }
+
+  .legal__inner h2 {
+    font-family: var(--font-serif);
+    font-size: var(--text-card-title);
+    font-weight: var(--weight-medium);
+    color: var(--color-text-primary);
+    line-height: var(--leading-snug);
+    margin: 0 0 16px;
+  }
+
+  .legal__inner h3 {
+    font-family: var(--font-sans);
+    font-size: var(--text-body-lg);
+    font-weight: var(--weight-semibold);
+    color: var(--color-text-primary);
+    margin: 24px 0 8px;
+  }
+
+  .legal__inner p {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-relaxed);
+    margin: 0 0 16px;
+  }
+
+  .legal__inner ul {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-relaxed);
+    padding-left: 24px;
+    margin: 0 0 16px;
+  }
+
+  .legal__inner li {
+    margin-bottom: 8px;
+  }
+
+  .legal__inner hr {
+    border: none;
+    height: 1px;
+    background: var(--color-border-subtle);
+    margin: 40px 0;
+  }
+
+  .legal__inner strong {
+    color: var(--color-text-primary);
+    font-weight: var(--weight-semibold);
+  }
+
+  .legal__table-wrap {
+    overflow-x: auto;
+    margin: 0 0 16px;
+  }
+
+  .legal__inner table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-sans);
+    font-size: var(--text-body-sm);
+    color: var(--color-text-secondary);
+    line-height: var(--leading-normal);
+  }
+
+  .legal__inner th {
+    text-align: left;
+    font-weight: var(--weight-semibold);
+    color: var(--color-text-primary);
+    padding: 12px 16px;
+    border-bottom: 2px solid var(--color-divider);
+    white-space: nowrap;
+  }
+
+  .legal__inner td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    vertical-align: top;
+  }
+
+  .legal__contact {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  @media (max-width: 767px) {
+    .legal {
+      padding: 96px var(--space-6) 48px;
+    }
+  }
+</style>
