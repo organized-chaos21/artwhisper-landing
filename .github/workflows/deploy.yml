@@ -22,4 +22,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name artwhisper-landing --branch master
+          # Project name, output dir (dist) and the D1 binding come from wrangler.toml.
+          command: pages deploy --branch=master

@@ -1,0 +1,15 @@
+# Cloudflare Pages config for the Art Whisper landing site.
+# Declares the static output dir and the D1 binding used by the
+# iOS waitlist Pages Function (functions/api/subscribe.js).
+name = "artwhisper-landing"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-11-01"
+
+# D1 database binding — exposed to Functions as `env.DB`.
+# Create the database once with:  wrangler d1 create artwhisper-signups
+# then paste the returned database_id below (see plan step 1.4).
+[[d1_databases]]
+binding = "DB"
+database_name = "artwhisper-signups"
+database_id = "d1d22954-1d1b-4907-8c9e-979eaee66524"
+migrations_dir = "migrations"
