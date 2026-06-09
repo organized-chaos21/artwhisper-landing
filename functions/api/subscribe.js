@@ -39,14 +39,20 @@ export async function onRequest({ request, env }) {
   }
 
   // Honeypot: a hidden field real users never fill. If it's populated,
-  // silently accept so bots get no signal, but store nothing.
-  if (data.company) return json({ ok: true });
+  // silently accept so bots get no signal, but store nothing. The field is
+  // named `hp_url` rather than an autofill token (e.g. "company") so browser
+  // / password-manager autofill can't trip it and drop a real signup.
+  if (data.hp_url) return json({ ok: true });
 
   const email = String(data.email || "").trim().toLowerCase();
   if (!EMAIL_RE.test(email)) {
     return json({ ok: false, error: "Please enter a valid email address." }, 400);
   }
-  if (!data.consent) {
+  // Accept only an explicit affirmative — a form post of `consent=false`
+  // would otherwise be a truthy string and record consent that wasn't given.
+  const consentGiven =
+    data.consent === true || ["true", "on", "1"].includes(String(data.consent));
+  if (!consentGiven) {
     return json({ ok: false, error: "Please agree to be notified." }, 400);
   }
 

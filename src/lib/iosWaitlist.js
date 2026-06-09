@@ -11,8 +11,6 @@
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
-// Matches the modal's CSS transition so we hide it only after the fade-out.
-const CLOSE_MS = 220;
 
 /** Detect iOS, including iPadOS which reports as a desktop Mac with touch. */
 function isIOS() {
@@ -51,28 +49,44 @@ export function initIosWaitlist() {
     emailInput.removeAttribute('aria-invalid');
   };
 
+  // Switch views and keep the dialog's accessible name/description pointed at
+  // the heading that's actually visible (the form ids are hidden on success).
+  function showView(name) {
+    const isForm = name === 'form';
+    formView.hidden = !isForm;
+    successView.hidden = isForm;
+    dialog.setAttribute('aria-labelledby', isForm ? 'ios-modal-title' : 'ios-modal-success-title');
+    dialog.setAttribute('aria-describedby', isForm ? 'ios-modal-desc' : 'ios-modal-success-desc');
+  }
+
   function open(source) {
-    // Reset to a clean form every time the modal is opened.
-    form.reset();
+    form.reset(); // start from a clean form every time
     clearError();
-    formView.hidden = false;
-    successView.hidden = true;
+    showView('form');
     root.dataset.source = source || '';
 
     lastFocused = document.activeElement;
     root.hidden = false;
     prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    requestAnimationFrame(() => root.classList.add('is-open'));
+    // Double rAF so the opacity:0 baseline paints before we add .is-open —
+    // otherwise the browser has no "from" frame and the fade-in is skipped.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => root.classList.add('is-open'))
+    );
     emailInput.focus();
   }
 
   function close() {
+    if (root.hidden) return;
     root.classList.remove('is-open');
     document.body.style.overflow = prevOverflow;
+    // Hide only after the fade-out finishes. Read the live CSS duration so it
+    // stays in sync (incl. 0ms under prefers-reduced-motion).
+    const fadeMs = parseFloat(getComputedStyle(root).transitionDuration) * 1000 || 0;
     window.setTimeout(() => {
       root.hidden = true;
-    }, CLOSE_MS);
+    }, fadeMs);
     if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
   }
 
@@ -107,7 +121,9 @@ export function initIosWaitlist() {
     if (e.target === root || e.target.closest('[data-ios-modal-close]')) close();
   });
   document.addEventListener('keydown', (e) => {
-    if (root.hidden) return;
+    // Bail as soon as closing starts (is-open removed) so Tab isn't trapped
+    // in the dialog during its fade-out, before root is hidden.
+    if (!root.classList.contains('is-open')) return;
     if (e.key === 'Escape') close();
     else trapFocus(e);
   });
@@ -119,7 +135,7 @@ export function initIosWaitlist() {
 
     const email = emailInput.value.trim();
     const consent = form.querySelector('input[name="consent"]').checked;
-    const company = form.querySelector('input[name="company"]').value; // honeypot
+    const honeypot = form.querySelector('input[name="hp_url"]').value;
 
     if (!EMAIL_RE.test(email)) {
       showError('Please enter a valid email address.');
@@ -136,12 +152,11 @@ export function initIosWaitlist() {
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email, consent, company, source: root.dataset.source }),
+        body: JSON.stringify({ email, consent, hp_url: honeypot, source: root.dataset.source }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.ok) {
-        formView.hidden = true;
-        successView.hidden = false;
+        showView('success');
         successView.querySelector('[data-ios-modal-close]').focus();
       } else {
         showError(data.error || 'Something went wrong. Please try again.');
