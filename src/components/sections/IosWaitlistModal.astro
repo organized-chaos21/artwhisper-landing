@@ -1,0 +1,327 @@
+---
+// iOS waitlist modal (Linear T1-616).
+// Rendered once globally in BaseLayout and hidden by default. On iOS,
+// src/lib/iosWaitlist.js intercepts the "Get the App" CTAs and opens this
+// instead of the Google Play redirect, captures an email + consent, and
+// POSTs it to /api/subscribe. Styling follows the landing design tokens.
+---
+<div class="ios-modal" data-ios-modal-root hidden>
+  <div
+    class="ios-modal__dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="ios-modal-title"
+    aria-describedby="ios-modal-desc"
+  >
+    <!-- Form view -->
+    <div data-ios-modal-view="form">
+      <div class="ios-modal__header">
+        <span class="ios-modal__badge" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 5-2.55 5-5.5 0-1.93-1.57-3.5-3.5-3.5-1.4 0-2.1.5-3 .5s-1.6-.5-3-.5c-3.04 0-5.5 2.46-5.5 5.5 0 3 1.75 5.5 5 5.5 1.25 0 2.5-1.06 4-1.06z"/><path d="M12 7c2-3 5-4 5-4s-1 3-3 5"/></svg>
+        </span>
+        <button type="button" class="ios-modal__close" data-ios-modal-close aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <p class="ios-modal__eyebrow">Coming soon to iPhone</p>
+      <h2 id="ios-modal-title" class="ios-modal__title">The iPhone app is on its way</h2>
+      <p id="ios-modal-desc" class="ios-modal__body">
+        Art Whisper for iPhone is in the works. Leave your email and we'll tell you the moment it's ready.
+      </p>
+
+      <form class="ios-modal__form" data-ios-modal-form novalidate>
+        <input
+          type="email"
+          name="email"
+          class="ios-modal__input"
+          placeholder="you@email.com"
+          autocomplete="email"
+          required
+          aria-label="Email address"
+        />
+
+        <!-- Honeypot: visually hidden and off the AT/tab order; bots fill it. -->
+        <div class="ios-modal__hp" aria-hidden="true">
+          <label>Leave this empty<input type="text" name="company" tabindex="-1" autocomplete="off" /></label>
+        </div>
+
+        <label class="ios-modal__consent">
+          <input type="checkbox" name="consent" required />
+          <span>Email me once when the iPhone app launches. No spam, ever. <a href="/privacy">Privacy Policy</a></span>
+        </label>
+
+        <p class="ios-modal__error" data-ios-modal-error role="alert" hidden></p>
+
+        <button type="submit" class="ios-modal__submit" data-ios-modal-submit>Notify me when it's ready</button>
+      </form>
+    </div>
+
+    <!-- Success view -->
+    <div data-ios-modal-view="success" hidden>
+      <div class="ios-modal__header ios-modal__header--end">
+        <button type="button" class="ios-modal__close" data-ios-modal-close aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="ios-modal__success">
+        <span class="ios-modal__check" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <h2 class="ios-modal__title ios-modal__title--center">You're on the list</h2>
+        <p class="ios-modal__body ios-modal__body--center">
+          We'll email you the moment Art Whisper lands on iPhone. Just one note — no spam.
+        </p>
+        <button type="button" class="ios-modal__done" data-ios-modal-close>Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .ios-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+    background: rgba(36, 30, 23, 0.9);
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-out);
+  }
+
+  /* `hidden` must win over the flex display above. */
+  .ios-modal[hidden] {
+    display: none;
+  }
+
+  .ios-modal.is-open {
+    opacity: 1;
+  }
+
+  .ios-modal__dialog {
+    width: 100%;
+    max-width: 460px;
+    background: var(--color-bg-white, #fff);
+    border-radius: var(--border-radius-lg, 16px);
+    padding: 36px;
+    box-shadow: 0 30px 70px -20px rgba(14, 10, 6, 0.5);
+    transform: translateY(8px) scale(0.985);
+    transition: transform var(--duration-base) var(--ease-out);
+  }
+
+  .ios-modal.is-open .ios-modal__dialog {
+    transform: none;
+  }
+
+  .ios-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .ios-modal__header--end {
+    justify-content: flex-end;
+  }
+
+  .ios-modal__badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: var(--color-bg-cream, #f5efe6);
+    color: var(--color-text-primary, #1a1a1a);
+  }
+
+  .ios-modal__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 15px;
+    background: transparent;
+    color: var(--color-text-tertiary, #6b6b6b);
+    cursor: pointer;
+    transition: background var(--duration-fast) var(--ease-out);
+  }
+
+  .ios-modal__close:hover {
+    background: rgba(12, 12, 16, 0.06);
+  }
+
+  .ios-modal__eyebrow {
+    font-size: 12px;
+    font-weight: var(--weight-semibold, 600);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-accent-hover, #d8881a);
+    margin: 0 0 10px;
+  }
+
+  .ios-modal__title {
+    font-family: var(--font-serif);
+    font-size: 27px;
+    font-weight: 500;
+    line-height: 1.12;
+    color: var(--color-text-primary, #1a1a1a);
+    margin: 0;
+  }
+
+  .ios-modal__title--center {
+    text-align: center;
+  }
+
+  .ios-modal__body {
+    font-size: 15.5px;
+    line-height: 1.5;
+    color: var(--color-text-secondary, #5a5a5a);
+    margin: 10px 0 0;
+  }
+
+  .ios-modal__body--center {
+    text-align: center;
+  }
+
+  .ios-modal__form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 22px;
+  }
+
+  .ios-modal__input {
+    height: 54px;
+    padding: 0 16px;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    color: var(--color-text-primary, #1a1a1a);
+    background: var(--color-bg-white, #fff);
+    border: 1.5px solid var(--color-divider, #d6cdb8);
+    border-radius: var(--border-radius-md, 12px);
+    transition: border-color var(--duration-fast) var(--ease-out);
+  }
+
+  .ios-modal__input::placeholder {
+    color: #9a938a;
+  }
+
+  .ios-modal__input:focus-visible {
+    outline: none;
+    border-color: var(--color-accent, #ef9f27);
+  }
+
+  .ios-modal__input[aria-invalid="true"] {
+    border-color: #c0392b;
+  }
+
+  /* Honeypot — kept in the DOM for bots, away from real users. */
+  .ios-modal__hp {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .ios-modal__consent {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--color-text-tertiary, #6b6b6b);
+    cursor: pointer;
+  }
+
+  .ios-modal__consent input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--color-accent, #ef9f27);
+  }
+
+  .ios-modal__consent a {
+    color: var(--color-accent-hover, #d8881a);
+    font-weight: 600;
+  }
+
+  .ios-modal__error {
+    font-size: 13.5px;
+    color: #c0392b;
+    margin: 0;
+  }
+
+  .ios-modal__submit,
+  .ios-modal__done {
+    height: 54px;
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: var(--border-radius-md, 12px);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+
+  .ios-modal__submit {
+    border: none;
+    color: var(--color-text-primary, #1a1a1a);
+    background: var(--color-accent, #ef9f27);
+  }
+
+  .ios-modal__submit:hover {
+    background: var(--color-accent-hover, #d8881a);
+  }
+
+  .ios-modal__submit:disabled {
+    opacity: 0.6;
+    cursor: progress;
+  }
+
+  .ios-modal__success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 8px;
+  }
+
+  .ios-modal__check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 36px;
+    background: rgba(239, 159, 39, 0.12);
+    color: var(--color-accent-hover, #d8881a);
+  }
+
+  .ios-modal__done {
+    width: 100%;
+    color: var(--color-text-primary, #1a1a1a);
+    background: var(--color-bg-white, #fff);
+    border: 1.5px solid var(--color-divider, #d6cdb8);
+  }
+
+  .ios-modal__done:hover {
+    border-color: var(--color-text-tertiary, #6b6b6b);
+  }
+
+  @media (max-width: 767px) {
+    .ios-modal__dialog {
+      padding: 28px 22px;
+    }
+    .ios-modal__title {
+      font-size: 24px;
+    }
+  }
+</style>

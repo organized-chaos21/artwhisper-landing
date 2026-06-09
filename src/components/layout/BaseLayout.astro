@@ -1,4 +1,5 @@
 ---
+import IosWaitlistModal from '../sections/IosWaitlistModal.astro';
 const { title = "Art Whisper — Stand in front of any painting. Walk away with its story." } = Astro.props;
 ---
 <!DOCTYPE html>
@@ -35,11 +36,14 @@ const { title = "Art Whisper — Stand in front of any painting. Walk away with 
 <body>
   <a href="#main" class="skip-link">Skip to content</a>
   <slot />
+  <IosWaitlistModal />
 
   <script>
     import { initSectionAnimations, initStickyHeader } from '../../lib/motion.js';
+    import { initIosWaitlist } from '../../lib/iosWaitlist.js';
     initSectionAnimations();
     initStickyHeader();
+    initIosWaitlist();
   </script>
 </body>
 </html>
