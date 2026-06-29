@@ -1,6 +1,30 @@
 ---
 import SectionHeader from '../primitives/SectionHeader.astro';
 
+const channels = [
+  {
+    title: 'Help & questions',
+    blurb: 'App trouble, account, or scans — we usually reply within a day or two.',
+    email: 'support@artwhisper.app',
+    href: 'mailto:support@artwhisper.app?subject=Support request',
+    icon: 'lifebuoy',
+  },
+  {
+    title: 'Museums & galleries',
+    blurb: "Want Art Whisper in your space? Let's talk.",
+    email: 'partnerships@artwhisper.app',
+    href: 'mailto:partnerships@artwhisper.app?subject=Partnership inquiry',
+    icon: 'landmark',
+  },
+  {
+    title: 'Press & everything else',
+    blurb: 'Feedback, press, or just saying hi.',
+    email: 'hello@artwhisper.app',
+    href: 'mailto:hello@artwhisper.app',
+    icon: 'mail',
+  },
+];
+
 const faqs = [
   { q: 'Do I need to create an account?', a: 'Yes. A free Art Whisper account lets us save your discoveries across devices and keeps your personal gallery private to you. Sign in takes a few seconds with Google, Facebook, or email.' },
   { q: 'Does it work without an internet connection?', a: 'Art Whisper needs a connection to identify paintings and pull up their stories. Most museums have decent wifi these days, and 4G usually works fine inside galleries. We\'re working on offline support for saved artworks down the road.' },
@@ -13,12 +37,35 @@ const faqs = [
   { q: 'I run a museum or gallery. Can we work together?', a: 'Yes. We\'d love to talk. Drop a note to <a href="mailto:partnerships@artwhisper.app?subject=Partnership inquiry">partnerships@artwhisper.app</a> and we\'ll be in touch.' },
   { q: 'How is the audio narration made?', a: 'Each story is written and produced specifically for the app. Not lifted from a textbook, not recycled from somewhere else. The goal is what you\'d hear from a friend who happens to be a curator: warm, accurate, never dry.' },
 ];
----
-<section class="faq" id="faq" data-animate="section">
-  <div class="faq__inner">
-    <SectionHeader eyebrow="QUESTIONS" headline="Before you tap install" />
 
-    <div class="faq__list" role="list">
+const icons = {
+  lifebuoy: '<circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="4"/>',
+  landmark: '<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+  mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+};
+---
+<section class="support" id="support" data-animate="section">
+  <div class="support__inner">
+    <SectionHeader
+      eyebrow="SUPPORT"
+      headline="Help & answers"
+      subhead="Reach a real person, or find a quick answer below."
+    />
+
+    <div class="support__channels">
+      {channels.map((channel) => (
+        <a class="contact-card" href={channel.href}>
+          <span class="contact-card__badge" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" set:html={icons[channel.icon]} />
+          </span>
+          <span class="contact-card__title">{channel.title}</span>
+          <span class="contact-card__blurb">{channel.blurb}</span>
+          <span class="contact-card__email">{channel.email}</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="support__faq-list" role="list">
       {faqs.map((faq, i) => (
         <div class="faq-item" role="listitem">
           <button
@@ -43,22 +90,100 @@ const faqs = [
         </div>
       ))}
     </div>
+
+    <p class="support__closing">
+      Still stuck? Email <a href="mailto:support@artwhisper.app?subject=Support request">support@artwhisper.app</a> and we'll get back to you.
+    </p>
   </div>
 </section>
 
 <style>
-  .faq {
+  .support {
     background: #FAFAF7;
     padding: var(--space-30) var(--space-6);
   }
 
-  .faq__inner {
-    max-width: var(--container-narrow);
+  .support__inner {
+    max-width: var(--container-default);
     margin: 0 auto;
   }
 
-  .faq__list {
-    margin-top: 80px;
+  /* Contact channels */
+  .support__channels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 56px;
+  }
+
+  .contact-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 28px;
+    background: var(--color-bg-white);
+    border: 1px solid rgba(12, 12, 16, 0.08);
+    border-radius: 14px;
+    text-decoration: none;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+
+  .contact-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+  }
+
+  .contact-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+  }
+
+  .contact-card__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(239, 159, 39, 0.12);
+    color: var(--color-accent-hover);
+  }
+
+  .contact-card__title {
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
+  }
+
+  .contact-card__blurb {
+    font-size: var(--text-body-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-secondary);
+  }
+
+  .contact-card__email {
+    margin-top: auto;
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    color: var(--color-accent-hover);
+    word-break: break-word;
+  }
+
+  .contact-card:hover .contact-card__email {
+    color: var(--color-accent);
+  }
+
+  /* FAQ accordion */
+  .support__faq-list {
+    max-width: var(--container-narrow);
+    margin: 64px auto 0;
   }
 
   .faq-item {
@@ -140,10 +265,45 @@ const faqs = [
     color: var(--color-accent);
   }
 
+  /* Closing */
+  .support__closing {
+    margin: 40px auto 0;
+    max-width: 560px;
+    text-align: center;
+    font-size: var(--text-body);
+    line-height: var(--leading-normal);
+    color: var(--color-text-secondary);
+  }
+
+  .support__closing a {
+    color: var(--color-accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .support__closing a:hover {
+    color: var(--color-accent);
+  }
+
   @media (max-width: 767px) {
-    .faq__list { margin-top: 56px; }
+    .support__channels {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 40px;
+    }
+    .contact-card {
+      padding: 20px;
+      gap: 10px;
+    }
+    .contact-card__badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .support__faq-list { margin-top: 48px; }
     .faq-item__trigger { padding: 20px 0; gap: 16px; }
     .faq-item__icon { font-size: 20px; }
+    .support__closing { margin-top: 32px; }
   }
 </style>
 
