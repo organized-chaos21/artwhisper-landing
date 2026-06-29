@@ -1,0 +1,333 @@
+---
+import SectionHeader from '../primitives/SectionHeader.astro';
+import { faqs } from '../../data/faqs.js';
+
+const mailto = (email, subject) =>
+  `mailto:${email}${subject ? `?subject=${encodeURIComponent(subject)}` : ''}`;
+
+const channels = [
+  {
+    title: 'Help & questions',
+    blurb: 'App trouble, account, or scans — we usually reply within a day or two.',
+    email: 'support@artwhisper.app',
+    subject: 'Support request',
+    icon: 'lifebuoy',
+  },
+  {
+    title: 'Museums & galleries',
+    blurb: "Want Art Whisper in your space? Let's talk.",
+    email: 'partnerships@artwhisper.app',
+    subject: 'Partnership inquiry',
+    icon: 'landmark',
+  },
+  {
+    title: 'Press & everything else',
+    blurb: 'Feedback, press, or just saying hi.',
+    email: 'hello@artwhisper.app',
+    icon: 'mail',
+  },
+];
+
+const supportChannel = channels[0];
+
+const icons = {
+  lifebuoy: '<circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/><circle cx="12" cy="12" r="4"/>',
+  landmark: '<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+  mail: '<rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>',
+};
+---
+<section class="support" id="support" data-animate="section">
+  <div class="support__inner">
+    <SectionHeader
+      eyebrow="SUPPORT"
+      headline="Help & answers"
+      subhead="Reach a real person, or find a quick answer below."
+    />
+
+    <div class="support__channels">
+      {channels.map((channel) => (
+        <a class="contact-card" href={mailto(channel.email, channel.subject)}>
+          <span class="contact-card__badge" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" set:html={icons[channel.icon]} />
+          </span>
+          <span class="contact-card__title">{channel.title}</span>
+          <span class="contact-card__blurb">{channel.blurb}</span>
+          <span class="contact-card__email">{channel.email}</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="support__faq-list" id="faq" role="list">
+      {faqs.map((faq, i) => (
+        <div class="faq-item" role="listitem">
+          <button
+            class="faq-item__trigger"
+            aria-expanded="false"
+            aria-controls={`faq-answer-${i}`}
+            id={`faq-question-${i}`}
+          >
+            <span class="faq-item__question">{faq.q}</span>
+            <span class="faq-item__icon" aria-hidden="true">+</span>
+          </button>
+          <div
+            class="faq-item__answer"
+            id={`faq-answer-${i}`}
+            role="region"
+            aria-labelledby={`faq-question-${i}`}
+          >
+            <div class="faq-item__answer-inner">
+              <p set:html={faq.a} />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <p class="support__closing">
+      Still stuck? Email <a href={mailto(supportChannel.email, supportChannel.subject)}>{supportChannel.email}</a> and we'll get back to you.
+    </p>
+  </div>
+</section>
+
+<style>
+  .support {
+    background: #FAFAF7;
+    padding: var(--space-30) var(--space-6);
+  }
+
+  .support__inner {
+    max-width: var(--container-default);
+    margin: 0 auto;
+  }
+
+  /* Contact channels */
+  .support__channels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 56px;
+  }
+
+  .contact-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 28px;
+    background: var(--color-bg-white);
+    border: 1px solid rgba(12, 12, 16, 0.08);
+    border-radius: 14px;
+    text-decoration: none;
+    transition:
+      border-color var(--duration-fast) var(--ease-out),
+      box-shadow var(--duration-fast) var(--ease-out),
+      transform var(--duration-fast) var(--ease-out);
+  }
+
+  .contact-card:hover {
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-2px);
+  }
+
+  .contact-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+  }
+
+  .contact-card__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(239, 159, 39, 0.12);
+    color: var(--color-accent-hover);
+  }
+
+  .contact-card__title {
+    font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
+  }
+
+  .contact-card__blurb {
+    font-size: var(--text-body-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-secondary);
+  }
+
+  .contact-card__email {
+    margin-top: auto;
+    font-size: var(--text-body-sm);
+    font-weight: 500;
+    color: var(--color-accent-hover);
+    word-break: break-word;
+  }
+
+  .contact-card:hover .contact-card__email {
+    color: var(--color-accent);
+  }
+
+  /* FAQ accordion */
+  .support__faq-list {
+    max-width: var(--container-narrow);
+    margin: 64px auto 0;
+  }
+
+  .faq-item {
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .faq-item:first-child {
+    border-top: 1px solid var(--color-divider);
+  }
+
+  .faq-item__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+    padding: 24px 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .faq-item__trigger:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
+  .faq-item__question {
+    font-family: var(--font-serif);
+    font-size: var(--text-card-title);
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .faq-item__icon {
+    flex-shrink: 0;
+    font-size: 24px;
+    color: var(--color-accent);
+    transition: transform var(--duration-base) var(--ease-out);
+    line-height: 1;
+  }
+
+  .faq-item.is-open .faq-item__icon {
+    transform: rotate(45deg);
+  }
+
+  .faq-item__answer {
+    display: grid;
+    grid-template-rows: 0fr;
+    /* visibility:hidden keeps collapsed answers (and the links inside them)
+       out of the tab order and a11y tree; delay it until the collapse
+       animation finishes so the text doesn't vanish mid-transition. */
+    visibility: hidden;
+    transition:
+      grid-template-rows var(--duration-base) var(--ease-out),
+      visibility 0s linear var(--duration-base);
+  }
+
+  .faq-item.is-open .faq-item__answer {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows var(--duration-base) var(--ease-out);
+  }
+
+  .faq-item__answer-inner {
+    overflow: hidden;
+  }
+
+  .faq-item__answer p {
+    padding-bottom: 24px;
+    font-size: var(--text-body);
+    line-height: var(--leading-relaxed);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .faq-item__answer a {
+    color: var(--color-accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .faq-item__answer a:hover {
+    color: var(--color-accent);
+  }
+
+  /* Closing */
+  .support__closing {
+    margin: 40px auto 0;
+    max-width: 560px;
+    text-align: center;
+    font-size: var(--text-body);
+    line-height: var(--leading-normal);
+    color: var(--color-text-secondary);
+  }
+
+  .support__closing a {
+    color: var(--color-accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .support__closing a:hover {
+    color: var(--color-accent);
+  }
+
+  @media (max-width: 767px) {
+    .support__channels {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 40px;
+    }
+    .contact-card {
+      padding: 20px;
+      gap: 10px;
+    }
+    .contact-card__badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+    .support__faq-list { margin-top: 48px; }
+    .faq-item__trigger { padding: 20px 0; gap: 16px; }
+    .faq-item__icon { font-size: 20px; }
+    .support__closing { margin-top: 32px; }
+  }
+</style>
+
+<script>
+  const items = Array.from(document.querySelectorAll('.faq-item'));
+  const triggers = items.map(item => item.querySelector('.faq-item__trigger'));
+
+  items.forEach((item, idx) => {
+    const trigger = triggers[idx];
+
+    trigger.addEventListener('click', () => {
+      const isOpen = item.classList.contains('is-open');
+      item.classList.toggle('is-open');
+      trigger.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    trigger.addEventListener('keydown', (e) => {
+      let next = -1;
+      if (e.key === 'ArrowDown') next = Math.min(idx + 1, triggers.length - 1);
+      if (e.key === 'ArrowUp') next = Math.max(idx - 1, 0);
+      if (next >= 0 && next !== idx) {
+        e.preventDefault();
+        triggers[next].focus();
+      }
+    });
+  });
+</script>
