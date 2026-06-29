@@ -44,6 +44,27 @@ const { title = "Art Whisper — Stand in front of any painting. Walk away with 
     initSectionAnimations();
     initStickyHeader();
     initIosWaitlist();
+
+    // Anchor-scroll correction. The section reveal animations and the
+    // `display=swap` web-font reflow change layout *after* the browser's
+    // initial hash jump, so deep links (e.g. /#support) overshoot the
+    // target. Re-scroll once the page has fully settled.
+    function scrollToHashTarget() {
+      const { hash } = window.location;
+      if (!hash || hash.length < 2) return;
+      let el;
+      try { el = document.querySelector(hash); } catch { return; }
+      if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+    if (window.location.hash) {
+      const fontsReady = document.fonts ? document.fonts.ready : Promise.resolve();
+      const loaded = document.readyState === 'complete'
+        ? Promise.resolve()
+        : new Promise((res) => window.addEventListener('load', res, { once: true }));
+      Promise.all([fontsReady, loaded]).then(() =>
+        requestAnimationFrame(scrollToHashTarget)
+      );
+    }
   </script>
 </body>
 </html>
