@@ -1,6 +1,12 @@
 ---
 import IosWaitlistModal from '../sections/IosWaitlistModal.astro';
 const { title = "Art Whisper — Stand in front of any painting. Walk away with its story." } = Astro.props;
+
+// Per-page canonical / og:url. Hardcoding the homepage here made every page
+// (privacy, terms) declare `/` as its canonical, so Google treated them as
+// duplicates and left them "Discovered – currently not indexed".
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL('/images/paintings/starry-night.jpeg', Astro.site).href;
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -12,18 +18,18 @@ const { title = "Art Whisper — Stand in front of any painting. Walk away with 
   <title>{title}</title>
 
   <!-- Canonical -->
-  <link rel="canonical" href="https://artwhisper.app/" />
+  <link rel="canonical" href={canonical} />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="Art Whisper — Stand in front of any painting. Walk away with its story." />
+  <meta property="og:title" content={title} />
   <meta property="og:description" content="Every painting has a story. Art Whisper tells it." />
-  <meta property="og:image" content="https://artwhisper.app/og-image.png" />
-  <meta property="og:url" content="https://artwhisper.app" />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:url" content={canonical} />
   <meta property="og:type" content="website" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:image" content="https://artwhisper.app/og-image.png" />
+  <meta name="twitter:image" content={ogImage} />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
