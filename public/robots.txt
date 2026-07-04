@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+# The waitlist endpoint is POST-only; keep crawlers off it (a GET returns 405).
+Disallow: /api/
+
+Sitemap: https://artwhisper.app/sitemap-index.xml
