@@ -17,6 +17,8 @@
 const API_BASE = "https://api.artwhisper.app";
 const PLAY_URL =
   "https://play.google.com/store/apps/details?id=app.artwhisper&utm_source=share&utm_medium=web_preview&utm_campaign=share_page";
+const APP_STORE_URL =
+  "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=share-web_preview";
 const FETCH_TIMEOUT_MS = 5000;
 
 // Slugs are lowercase words joined by hyphens (see backend slug.ts). Reject
@@ -225,10 +227,10 @@ function renderPage(data, slug) {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
         <span class="badge__col"><small>GET IT ON</small><strong>Google Play</strong></span>
       </a>
-      <span class="badge badge--ios" aria-label="iPhone app coming soon">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 5-2.55 5-5.5 0-1.93-1.57-3.5-3.5-3.5-1.4 0-2.1.5-3 .5s-1.6-.5-3-.5c-3.04 0-5.5 2.46-5.5 5.5 0 3 1.75 5.5 5 5.5 1.25 0 2.5-1.06 4-1.06z"/><path d="M12 7c2-3 5-4 5-4s-1 3-3 5"/></svg>
-        <span class="badge__col"><small>COMING SOON</small><strong>iPhone</strong></span>
-      </span>
+      <a class="badge badge--ios" href="${APP_STORE_URL}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 5-2.55 5-5.5 0-1.93-1.57-3.5-3.5-3.5-1.4 0-2.1.5-3 .5s-1.6-.5-3-.5c-3.04 0-5.5 2.46-5.5 5.5 0 3 1.75 5.5 5 5.5 1.25 0 2.5-1.06 4-1.06z"/><path d="M12 7c2-3 5-4 5-4s-1 3-3 5"/></svg>
+        <span class="badge__col"><small>DOWNLOAD ON THE</small><strong>App Store</strong></span>
+      </a>
     </div>
   </section>
 
@@ -472,7 +474,9 @@ h1,h2{margin:0}
 .badge--play{background:var(--t-primary);color:#fff}
 .badge--play svg{color:var(--gold)}
 .badge--play:hover{opacity:.9}
-.badge--ios{border:1px solid var(--border);color:var(--t-secondary);cursor:default}
+.badge--ios{background:var(--t-primary);color:#fff}
+.badge--ios svg{color:#fff}
+.badge--ios:hover{opacity:.9}
 .badge__col{display:flex;flex-direction:column;line-height:1.1;text-align:left}
 .badge__col small{font-size:8px;opacity:.8}
 .badge__col strong{font-size:12px;font-weight:600}
