@@ -1,5 +1,4 @@
 ---
-import IosWaitlistModal from '../sections/IosWaitlistModal.astro';
 const { title = "Art Whisper — Stand in front of any painting. Walk away with its story." } = Astro.props;
 
 // Per-page canonical / og:url. Hardcoding the homepage here made every page
@@ -42,14 +41,13 @@ const ogImage = new URL('/images/paintings/starry-night.jpeg', Astro.site).href;
 <body>
   <a href="#main" class="skip-link">Skip to content</a>
   <slot />
-  <IosWaitlistModal />
 
   <script>
     import { initSectionAnimations, initStickyHeader } from '../../lib/motion.js';
-    import { initIosWaitlist } from '../../lib/iosWaitlist.js';
+    import { initAppLinks } from '../../lib/appLinks.js';
     initSectionAnimations();
     initStickyHeader();
-    initIosWaitlist();
+    initAppLinks();
 
     // Anchor-scroll correction. The section reveal animations and the
     // `display=swap` web-font reflow change layout *after* the browser's
