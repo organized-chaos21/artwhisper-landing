@@ -191,6 +191,8 @@ function renderPage(data, slug) {
   <meta name="twitter:image" content="${esc(shareCard)}" />
 
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" href="/favicon.ico" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
@@ -199,8 +201,8 @@ function renderPage(data, slug) {
 <body>
   <header class="nav">
     <a class="nav__brand" href="https://artwhisper.app">
-      <img class="nav__logo" src="/favicon.svg" alt="Art Whisper" width="28" height="28" />
-      <span>artwhisper.app</span>
+      ${LOGO(28, "#1A1A1A")}
+      <span>Art Whisper</span>
     </a>
     <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener">
       Open in Art Whisper ${ARROW}
@@ -219,17 +221,15 @@ function renderPage(data, slug) {
 
   <section class="band cta">
     <div class="cta__left">
-      <span class="cta__mark"></span>
+      <span class="cta__mark">${LOGO(15, "#FFFFFF")}</span>
       <span>Get the full experience in Art Whisper</span>
     </div>
     <div class="badges">
-      <a class="badge badge--play" href="${PLAY_URL}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-        <span class="badge__col"><small>GET IT ON</small><strong>Google Play</strong></span>
+      <a class="badge" href="${PLAY_URL}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play">
+        <img src="/badges/google-play.svg" alt="Get it on Google Play" height="44" />
       </a>
-      <a class="badge badge--ios" href="${APP_STORE_URL}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 5-2.55 5-5.5 0-1.93-1.57-3.5-3.5-3.5-1.4 0-2.1.5-3 .5s-1.6-.5-3-.5c-3.04 0-5.5 2.46-5.5 5.5 0 3 1.75 5.5 5 5.5 1.25 0 2.5-1.06 4-1.06z"/><path d="M12 7c2-3 5-4 5-4s-1 3-3 5"/></svg>
-        <span class="badge__col"><small>DOWNLOAD ON THE</small><strong>App Store</strong></span>
+      <a class="badge" href="${APP_STORE_URL}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store">
+        <img src="/badges/app-store.svg" alt="Download on the App Store" height="44" />
       </a>
     </div>
   </section>
@@ -253,9 +253,13 @@ function renderPage(data, slug) {
   </footer>
 
   <a class="stickybar" href="${PLAY_URL}" target="_blank" rel="noopener">
-    <span class="stickybar__left"><img class="stickybar__logo" src="/favicon.svg" alt="" width="32" height="32" /><strong>Open in Art Whisper</strong></span>
+    <span class="stickybar__left">${LOGO(30, "#1A1A1A")}<strong>Open in Art Whisper</strong></span>
     ${ARROW}
   </a>
+  ${monitorScript(slug, [
+    { kind: "hero", url: heroImg },
+    { kind: "artist-portrait", url: artist?.image_url || null },
+  ])}
 </body>
 </html>`;
 }
@@ -316,7 +320,7 @@ function renderNotice(items) {
     .join("");
   const lock =
     remaining > 0
-      ? `<div class="lockcta">${LOCK}<span>${remaining} more detail${remaining === 1 ? "" : "s"} waiting — unlock in Art Whisper</span></div>`
+      ? `<a class="lockcta" href="${PLAY_URL}" target="_blank" rel="noopener">${LOCK}<span>${remaining} more detail${remaining === 1 ? "" : "s"} waiting — unlock in Art Whisper</span>${ARROW}</a>`
       : "";
   return `<section class="notice">
     <div class="notice__head">
@@ -386,6 +390,8 @@ function renderNotFound() {
   <title>Artwork not found · Art Whisper</title>
   <meta name="robots" content="noindex" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" href="/favicon.ico" type="image/png" />
+  <link rel="apple-touch-icon" href="/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=Lora:wght@600&display=swap" rel="stylesheet" />
@@ -393,7 +399,7 @@ function renderNotFound() {
 </head>
 <body>
   <main class="empty">
-    <img class="empty__logo" src="/favicon.svg" alt="Art Whisper" width="56" height="56" />
+    <span class="empty__logo">${LOGO(56, "#1A1A1A")}</span>
     <h1>This artwork isn't available</h1>
     <p>The link may have expired, or the artwork can't be shared publicly. You can still explore thousands of works in the app.</p>
     <a class="empty__cta" href="${PLAY_URL}" target="_blank" rel="noopener">Get the app ${ARROW}</a>
@@ -409,6 +415,42 @@ const LOCK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke
 const LOCK_SM = `<svg class="audio__lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 const HEADPHONES = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>`;
 const PLAY_TRI = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg>`;
+
+// Art Whisper brandmark, inlined with an EXPLICIT fill. The shared /favicon.svg
+// swaps to white under `prefers-color-scheme: dark` — great for a browser tab,
+// but as an <img> on our always-light surfaces it painted white-on-white and
+// vanished (T1-729 bug 1). Inlining with a fixed fill pins the colour.
+const LOGO = (size, fill) =>
+  `<svg class="awmark" width="${size}" height="${size}" viewBox="0 0 128 128" fill="${fill}" aria-hidden="true"><path d="M50.4 78.5a75.1 75.1 0 0 0-28.5 6.9l24.2-65.7c.7-2 1.9-3.2 3.4-3.2h29c1.5 0 2.7 1.2 3.4 3.2l24.2 65.7s-11.6-7-28.5-7L67 45.5c-.4-1.7-1.6-2.8-2.9-2.8-1.3 0-2.5 1.1-2.9 2.7L50.4 78.5Zm-1.1 28.2Zm-4.2-20.2c-2 6.6-.6 15.8 4.2 20.2a17.5 17.5 0 0 1 .2-.7 5.5 5.5 0 0 1 5.7-4.5c2.8.1 4.3 1.5 4.7 4.7.2 1.1.2 2.3.2 3.5v.4c0 2.7.7 5.2 2.2 7.4a13 13 0 0 0 5.7 4.9v-.3l-.2-.3c-1.8-5.6-.5-9.5 4.4-12.8l1.5-1a73 73 0 0 0 3.2-2.2 16 16 0 0 0 6.8-11.4c.3-2 .1-4-.6-6l-.8.6-1.6 1a37 37 0 0 1-22.4 2.7c-5-.7-9.7-2-13.2-6.2Z"/></svg>`;
+
+// ─── Error monitoring ───────────────────────────────────────────────
+// The page is served from the edge as static HTML; the hero and artist portrait
+// are CSS background-images (no `error` event), so a broken image would fail
+// silently. This tiny client watches every <img> plus the background-image URLs
+// and posts a Sentry event when one fails to load (T1-729 bug 3). It reuses the
+// Art Whisper Sentry project via its public DSN (safe to embed — it's the same
+// key shipped in the mobile app).
+const SENTRY_INGEST =
+  "https://o4510820807671808.ingest.us.sentry.io/api/4510900475592704/envelope/?sentry_key=e6024fe36e2671d1048f9c3b1c683f21&sentry_version=7";
+
+function monitorScript(slug, bgImages) {
+  const cfg = JSON.stringify({
+    slug,
+    ingest: SENTRY_INGEST,
+    bg: bgImages.filter((b) => b && b.url),
+  });
+  return `<script>(function(){
+  var D=${cfg};
+  function eid(){var a=new Uint8Array(16);if(self.crypto&&crypto.getRandomValues){crypto.getRandomValues(a)}return Array.prototype.map.call(a,function(b){return("0"+b.toString(16)).slice(-2)}).join("")}
+  function report(kind,url){try{
+    var id=eid();
+    var env=JSON.stringify({event_id:id,sent_at:new Date().toISOString()})+"\\n"+JSON.stringify({type:"event"})+"\\n"+JSON.stringify({event_id:id,level:"error",platform:"javascript",logger:"share-web",message:"Share page image failed to load ("+kind+")",tags:{surface:"share-web",slug:D.slug,image:kind},request:{url:location.href},extra:{image_url:url||null}});
+    if(navigator.sendBeacon){navigator.sendBeacon(D.ingest,new Blob([env],{type:"application/x-sentry-envelope"}))}else{fetch(D.ingest,{method:"POST",body:env,keepalive:true,mode:"no-cors"})}
+  }catch(e){}}
+  Array.prototype.forEach.call(document.images||[],function(img){img.addEventListener("error",function(){report("img:"+(img.getAttribute("alt")||"")||img.src,img.currentSrc||img.src)})});
+  D.bg.forEach(function(o){var im=new Image();im.onerror=function(){report(o.kind,o.url)};im.src=o.url})
+})();</script>`;
+}
 
 // ─── Styles (design: Pencil "Share Web" lane, tokens $share-*) ───────
 const STYLES = `
@@ -426,6 +468,7 @@ body{margin:0;background:var(--bg);color:var(--t-body);font-family:var(--sans);
 img{max-width:100%;display:block}
 a{color:inherit}
 h1,h2{margin:0}
+.awmark{display:block;flex:none}
 .eyebrow{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:2px;display:block}
 .eyebrow--muted{color:var(--t-label)}
 .eyebrow--gold{color:var(--gold)}
@@ -467,19 +510,11 @@ h1,h2{margin:0}
   padding:18px var(--pad)}
 .cta__left{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:var(--t-body)}
 .cta__mark{width:24px;height:24px;border-radius:6px;background:var(--gold);flex:none;
-  background-image:url('/favicon.svg');background-size:cover}
-.badges{display:flex;align-items:center;gap:10px}
-.badge{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:6px;
-  text-decoration:none;height:44px}
-.badge--play{background:var(--t-primary);color:#fff}
-.badge--play svg{color:var(--gold)}
-.badge--play:hover{opacity:.9}
-.badge--ios{background:var(--t-primary);color:#fff}
-.badge--ios svg{color:#fff}
-.badge--ios:hover{opacity:.9}
-.badge__col{display:flex;flex-direction:column;line-height:1.1;text-align:left}
-.badge__col small{font-size:8px;opacity:.8}
-.badge__col strong{font-size:12px;font-weight:600}
+  display:flex;align-items:center;justify-content:center}
+.badges{display:flex;align-items:center;gap:12px}
+.badge{display:inline-flex;text-decoration:none;transition:opacity .15s ease}
+.badge:hover{opacity:.85}
+.badge img{height:44px;width:auto;display:block}
 
 /* About */
 .about{padding:56px var(--pad) 48px;background:var(--bg)}
@@ -507,7 +542,8 @@ h1,h2{margin:0}
 .ncard__text{margin:0;font-family:var(--serif);font-weight:600;font-size:18px;
   line-height:1.4;color:var(--t-primary)}
 .lockcta{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;
-  color:var(--gold);font-size:14px;font-weight:500}
+  color:var(--gold);font-size:14px;font-weight:500;text-decoration:none}
+.lockcta:hover{text-decoration:underline}
 
 /* Audio deep dive */
 .audio{background:var(--band-warm);padding:56px var(--pad);display:flex;flex-direction:column;gap:16px}
@@ -576,8 +612,8 @@ h1,h2{margin:0}
   .quote{padding:36px 24px;gap:24px}
   .quote__text{font-size:21px}
   .cta{padding:20px}
-  .badges{width:100%}
-  .badge{flex:1;justify-content:center}
+  .badges{width:100%;justify-content:center;flex-wrap:wrap}
+  .badge img{height:48px}
   .about{padding:32px 20px 24px}
   .about__body p{font-size:16px}
   .movements{padding:0 20px 24px}
