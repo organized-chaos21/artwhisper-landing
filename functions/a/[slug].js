@@ -201,15 +201,15 @@ function renderPage(data, slug) {
 <body>
   <header class="nav">
     <a class="nav__brand" href="https://artwhisper.app">
-      ${LOGO(28, "#1A1A1A")}
+      <img class="nav__logo" src="/logo.png" alt="Art Whisper" width="30" height="30" />
       <span>Art Whisper</span>
     </a>
     <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener">
-      Open in Art Whisper ${ARROW}
+      <span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}
     </a>
   </header>
 
-  <section class="hero"${heroCss ? ` style="background-image:linear-gradient(180deg,rgba(20,20,40,.15) 30%,rgba(0,0,0,.8) 100%),url('${heroCss}')"` : ""}>
+  <section class="hero"${heroCss ? ` style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.28) 44%,rgba(0,0,0,.68) 72%,rgba(0,0,0,.94) 100%),url('${heroCss}')"` : ""}>
     <div class="hero__title">
       <h1>${esc(title)}</h1>
       ${subtitle ? `<p>${esc(subtitle)}</p>` : ""}
@@ -221,7 +221,7 @@ function renderPage(data, slug) {
 
   <section class="band cta">
     <div class="cta__left">
-      <span class="cta__mark">${LOGO(15, "#FFFFFF")}</span>
+      <img class="cta__mark" src="/logo.png" alt="" width="26" height="26" />
       <span>Get the full experience in Art Whisper</span>
     </div>
     <div class="badges">
@@ -248,12 +248,11 @@ function renderPage(data, slug) {
   </section>
 
   <footer class="foot">
-    <span><a href="https://artwhisper.app">Art Whisper</a> · <a href="https://artwhisper.app/terms">Terms</a> · <a href="https://artwhisper.app/privacy">Privacy</a></span>
-    <span>© ${new Date().getFullYear()}</span>
+    <span>© ${new Date().getFullYear()} Bright Star. All rights reserved.</span>
   </footer>
 
   <a class="stickybar" href="${PLAY_URL}" target="_blank" rel="noopener">
-    <span class="stickybar__left">${LOGO(30, "#1A1A1A")}<strong>Open in Art Whisper</strong></span>
+    <span class="stickybar__left"><img class="stickybar__logo" src="/logo.png" alt="" width="32" height="32" /><strong>Open the App</strong></span>
     ${ARROW}
   </a>
   ${monitorScript(slug, [
@@ -399,7 +398,7 @@ function renderNotFound() {
 </head>
 <body>
   <main class="empty">
-    <span class="empty__logo">${LOGO(56, "#1A1A1A")}</span>
+    <img class="empty__logo" src="/logo.png" alt="Art Whisper" width="60" height="60" />
     <h1>This artwork isn't available</h1>
     <p>The link may have expired, or the artwork can't be shared publicly. You can still explore thousands of works in the app.</p>
     <a class="empty__cta" href="${PLAY_URL}" target="_blank" rel="noopener">Get the app ${ARROW}</a>
@@ -477,17 +476,19 @@ h1,h2{margin:0}
 .nav{display:flex;align-items:center;justify-content:space-between;height:56px;
   padding:0 var(--pad);background:var(--surface);border-bottom:1px solid var(--border);}
 .nav__brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--t-secondary);font-size:14px}
-.nav__logo{border-radius:6px}
+.nav__logo{border-radius:50%;display:block}
 .nav__open{display:inline-flex;align-items:center;gap:6px;color:var(--gold);
   font-size:14px;font-weight:500;text-decoration:none}
+.nav__open-sm{display:none}
 
 /* Hero */
 .hero{position:relative;height:min(700px,72vh);background:#141428 center/cover no-repeat;
   display:flex;align-items:flex-end;}
 .hero__title{padding:0 var(--pad) 48px;max-width:1100px}
 .hero__title h1{font-family:var(--serif);font-weight:700;font-size:64px;line-height:1.05;color:#fff;
-  text-shadow:0 2px 24px rgba(0,0,0,.4)}
-.hero__title p{margin:12px 0 0;color:rgba(255,255,255,.85);font-size:20px;letter-spacing:.5px}
+  text-shadow:0 2px 24px rgba(0,0,0,.85)}
+.hero__title p{margin:12px 0 0;color:rgba(255,255,255,.9);font-size:20px;letter-spacing:.5px;
+  text-shadow:0 1px 16px rgba(0,0,0,.7)}
 
 /* Metadata bar */
 .meta{display:flex;flex-wrap:wrap;gap:48px;padding:32px var(--pad);
@@ -509,8 +510,7 @@ h1,h2{margin:0}
   background:var(--band-light);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
   padding:18px var(--pad)}
 .cta__left{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:var(--t-body)}
-.cta__mark{width:24px;height:24px;border-radius:6px;background:var(--gold);flex:none;
-  display:flex;align-items:center;justify-content:center}
+.cta__mark{width:26px;height:26px;border-radius:50%;flex:none;display:block}
 .badges{display:flex;align-items:center;gap:12px}
 .badge{display:inline-flex;text-decoration:none;transition:opacity .15s ease}
 .badge:hover{opacity:.85}
@@ -580,7 +580,7 @@ h1,h2{margin:0}
 .report{display:flex;justify-content:flex-end;padding:8px var(--pad) 40px;background:var(--bg)}
 .report a{display:inline-flex;align-items:center;gap:8px;color:var(--t-label);
   font-size:13px;text-decoration:none}
-.foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;
+.foot{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px;
   padding:20px var(--pad);background:var(--band-light);border-top:1px solid var(--border);
   color:var(--t-label);font-size:13px}
 .foot a{color:var(--t-label);text-decoration:none}
@@ -592,7 +592,7 @@ h1,h2{margin:0}
 /* Empty / not-found */
 .empty{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:16px;text-align:center;padding:40px;max-width:520px;margin:0 auto}
-.empty__logo{margin-bottom:8px}
+.empty__logo{margin-bottom:8px;border-radius:50%}
 .empty h1{font-family:var(--serif);font-weight:600;font-size:26px;color:var(--t-primary)}
 .empty p{margin:0;color:var(--t-secondary);font-size:16px;line-height:1.5;max-width:420px}
 .empty__cta{display:inline-flex;align-items:center;gap:8px;margin-top:8px;
@@ -603,12 +603,14 @@ h1,h2{margin:0}
 /* ── Responsive ── */
 @media (max-width:768px){
   :root{--pad:20px}
-  .nav__open{display:none}
+  .nav__open-lg{display:none}
+  .nav__open-sm{display:inline}
   .hero{height:min(360px,50vh)}
   .hero__title{padding:0 20px 28px}
   .hero__title h1{font-size:34px}
   .hero__title p{font-size:16px}
-  .meta{gap:20px 40px;padding:24px 20px}
+  .meta{display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;padding:24px 20px}
+  .meta__cell:last-child{grid-column:1 / -1}
   .quote{padding:36px 24px;gap:24px}
   .quote__text{font-size:21px}
   .cta{padding:20px}
@@ -630,7 +632,8 @@ h1,h2{margin:0}
     box-shadow:0 -2px 12px rgba(0,0,0,.08);text-decoration:none;color:var(--t-primary)}
   .stickybar__left{display:flex;align-items:center;gap:10px;font-size:14px}
   .stickybar__left strong{font-weight:600}
-  .stickybar__logo{border-radius:8px}
+  .stickybar__logo{border-radius:50%}
   .stickybar .arr{color:var(--gold)}
+  .report{justify-content:flex-start;padding:8px 20px 32px}
 }
 `;
