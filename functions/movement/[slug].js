@@ -401,14 +401,19 @@ function renderTimeline(t) {
     .map(([label, year]) => `<div class="tpoint"><span class="tpoint__dot"></span><span class="tpoint__year">${esc(String(year))}</span><span class="tpoint__lbl">${label}</span></div>`)
     .join("");
   const flow = [
-    t.what_came_before ? `<span class="tflow"><em>Grew out of</em> ${esc(t.what_came_before)}</span>` : "",
-    t.what_came_after ? `<span class="tflow"><em>Led to</em> ${esc(t.what_came_after)}</span>` : "",
+    t.what_came_before ? tflowCard("Grew out of", t.what_came_before, "back") : "",
+    t.what_came_after ? tflowCard("Led to", t.what_came_after, "fwd") : "",
   ].filter(Boolean).join("");
   return `<section class="sec timeline">
     <span class="eyebrow eyebrow--muted">TIMELINE</span>
     <div class="tline">${dots}</div>
     ${flow ? `<div class="tflows">${flow}</div>` : ""}
   </section>`;
+}
+
+function tflowCard(label, val, dir) {
+  const icon = dir === "back" ? CHEV_L : CHEV_R;
+  return `<div class="tflow tflow--${dir}"><span class="tflow__ic">${icon}</span><span class="tflow__txt"><span class="tflow__lbl">${label}</span><span class="tflow__v">${esc(val)}</span></span></div>`;
 }
 
 function renderSpot(spot) {
@@ -447,12 +452,23 @@ function renderRelated(related) {
   </section>`;
 }
 
+function pnCard(m, dir) {
+  if (!m) return "<span></span>";
+  const years = m.time_period || "";
+  const c = cssUrl(m.image_url);
+  const thumb = `<span class="mvc__thumb${c ? "" : " mvc__thumb--ph"}"${c ? ` style="background-image:url('${c}')"` : ""}></span>`;
+  const txt = `<span class="mvc__txt"><span class="mvc__lbl">${dir === "prev" ? "Previous" : "Next"}</span><strong>${esc(m.name || "")}</strong>${years ? `<span class="mvc__yr">${esc(years)}</span>` : ""}</span>`;
+  const chev = `<span class="mvc__chev">${dir === "prev" ? CHEV_L : CHEV_R}</span>`;
+  const inner = dir === "prev" ? `${chev}${thumb}${txt}` : `${txt}${thumb}${chev}`;
+  return `<a class="mvc mvc--${dir}" href="/movement/${esc(m.slug)}">${inner}</a>`;
+}
+
 function renderPrevNext(before, after) {
   if (!before && !after) return "";
   return `<section class="sec prevnext">
     <div class="pn">
-      ${before ? movementCard(before, "Previous") : "<span></span>"}
-      ${after ? movementCard(after, "Next") : "<span></span>"}
+      ${pnCard(before, "prev")}
+      ${pnCard(after, "next")}
     </div>
   </section>`;
 }
@@ -594,7 +610,7 @@ h1,h2{margin:0}
 /* Hero gallery */
 .hero{position:relative;height:min(560px,64vh);overflow:hidden;background:#141428}
 .hero__track{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1)}
-.hero__slide{flex:0 0 100%;height:100%;background:#141428 center/cover no-repeat}
+.hero__slide{flex:0 0 100%;height:100%;background:#141428 center/contain no-repeat}
 .hero__scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.28) 44%,rgba(0,0,0,.7) 72%,rgba(0,0,0,.94) 100%)}
 .hero__dots{position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;gap:8px;z-index:2}
 .hero__dot{width:8px;height:8px;padding:0;border:0;border-radius:5px;background:rgba(255,255,255,.5);cursor:pointer;transition:width .25s,background .25s}
@@ -628,7 +644,7 @@ h1,h2{margin:0}
 /* Key artists */
 .arow{display:flex;flex-wrap:wrap;gap:20px}
 .acard{flex:1 1 160px;max-width:200px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;position:relative;padding:8px}
-.acard__av{width:88px;height:88px;border-radius:50%;background:#E8E4DF center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--t-secondary);font-weight:600;font-size:26px}
+.acard__av{width:88px;height:88px;border-radius:14px;background:var(--band-light) center/contain no-repeat;display:flex;align-items:center;justify-content:center;color:var(--t-secondary);font-weight:600;font-size:26px}
 .acard strong{font-size:15px;color:var(--t-primary)}
 .acard__line{font-size:12.5px;color:var(--t-secondary)}
 .acard__link{color:#B0A99E;transition:color .2s} .acard:hover .acard__link{color:var(--gold)}
@@ -637,19 +653,24 @@ h1,h2{margin:0}
 .wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .wcard{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s}
 .wcard:hover{box-shadow:0 6px 20px rgba(26,20,13,.08)}
-.wcard__img{height:180px;background:#E8E4DF center/cover no-repeat}
+.wcard__img{height:180px;background:var(--card) center/contain no-repeat}
 .wcard__t{padding:14px 16px 2px;font-family:var(--serif);font-weight:600;font-size:16px;color:var(--t-primary)}
 .wcard__m{padding:0 16px 16px;font-size:13px;color:var(--t-secondary)}
 
 /* Timeline */
-.tline{display:flex;align-items:flex-start;gap:0;position:relative;max-width:640px}
+.tline{display:flex;align-items:flex-start;gap:0;position:relative;width:100%}
 .tpoint{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
 .tpoint:not(:last-child)::after{content:"";position:absolute;top:6px;left:50%;width:100%;height:2px;background:var(--border)}
 .tpoint__dot{width:14px;height:14px;border-radius:7px;background:var(--gold);position:relative;z-index:1}
 .tpoint__year{font-family:var(--serif);font-weight:700;font-size:20px;color:var(--t-primary);margin-top:4px}
 .tpoint__lbl{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:var(--t-label)}
-.tflows{display:flex;flex-wrap:wrap;gap:12px 40px;margin-top:28px}
-.tflow{font-size:14px;color:var(--t-body)} .tflow em{color:var(--t-label);font-style:normal;font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-right:4px}
+.tflows{display:flex;flex-wrap:wrap;gap:16px;margin-top:34px}
+.tflow{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;flex:1;min-width:260px}
+.tflow__ic{flex:none;width:34px;height:34px;border-radius:17px;background:var(--band-light);color:var(--gold);display:flex;align-items:center;justify-content:center}
+.tflow__txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.tflow__lbl{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--t-label)}
+.tflow__v{font-family:var(--serif);font-size:16px;color:var(--t-primary)}
+.tflow--fwd{flex-direction:row-reverse;text-align:right} .tflow--fwd .tflow__txt{align-items:flex-end}
 
 /* How to spot it */
 .spots{display:flex;flex-direction:column;gap:10px;max-width:820px}
@@ -661,7 +682,7 @@ h1,h2{margin:0}
 .mvgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .mvc{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 14px 8px 8px;transition:box-shadow .2s}
 .mvc:hover{box-shadow:0 4px 14px rgba(26,20,13,.07)}
-.mvc__thumb{flex:none;width:54px;height:54px;border-radius:8px;background:#E8E4DF center/cover no-repeat}
+.mvc__thumb{flex:none;width:54px;height:54px;border-radius:8px;background:var(--band-light) center/contain no-repeat}
 .mvc__thumb--ph{background:linear-gradient(135deg,#EDE7DF,#DED5C8)}
 .mvc__txt{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
 .mvc__lbl{font-size:11px;letter-spacing:.5px;color:var(--t-sub)}
@@ -669,7 +690,8 @@ h1,h2{margin:0}
 .mvc__yr{font-size:12px;color:var(--t-sub)}
 .mvc__chev{color:var(--gold);flex:none}
 .pn{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.pn .mvc:last-child{text-align:right} .pn .mvc:last-child .mvc__txt{align-items:flex-end}
+.pn .mvc--prev{justify-content:flex-start}
+.pn .mvc--next{justify-content:flex-end;text-align:right} .pn .mvc--next .mvc__txt{align-items:flex-end}
 
 /* Show more */
 .showmore{display:inline-flex;align-items:center;gap:5px;margin:20px auto 0;padding:9px 18px;background:none;border:1px solid var(--border);border-radius:20px;color:var(--gold);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:background .2s}
