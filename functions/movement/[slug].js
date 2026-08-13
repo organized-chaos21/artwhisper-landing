@@ -75,40 +75,10 @@ export async function onRequestGet(context) {
 
   if (!data || !data.movement) return html(renderNotFound(), 404, 60);
 
-  // The movement API doesn't return artwork images for related/before/after
-  // movements, so the Related + prev/next cards would have no thumbnail. Fetch
-  // each one's featured-artwork image in parallel (only when missing, so this
-  // becomes a no-op once the API is enhanced to include it). Edge-cached 1h.
-  await attachThumbs([
-    ...(data.related_movements || []),
-    data.before_movement,
-    data.after_movement,
-  ].filter(Boolean));
-
+  // Related + prev/next movements carry their featured-artwork `image_url`
+  // straight from GET /v1/movements/:slug, so the cards render thumbnails
+  // without any per-movement edge fetch.
   return html(renderPage(data, slug), 200, 3600);
-}
-
-async function attachThumbs(movements) {
-  await Promise.allSettled(
-    movements.map(async (mv) => {
-      if (!mv || mv.image_url || !mv.slug) return;
-      try {
-        const c = new AbortController();
-        const t = setTimeout(() => c.abort(), 3000);
-        const r = await fetch(
-          `${API_BASE}/v1/movements/${encodeURIComponent(mv.slug)}`,
-          { signal: c.signal, headers: { accept: "application/json" } },
-        );
-        clearTimeout(t);
-        if (r.ok) {
-          const d = await r.json();
-          mv.image_url = d?.movement?.featured_artwork?.image_url || null;
-        }
-      } catch {
-        /* leave without a thumbnail */
-      }
-    }),
-  );
 }
 
 function html(body, status, maxAge) {
