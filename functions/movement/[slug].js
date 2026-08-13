@@ -133,6 +133,11 @@ const CHEV_R = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stro
 const CHEV_L = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`;
 const CHEV_D = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
 const CHEV_U = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>`;
+const EXPAND = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+const CLOSE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+// Prefer the large derivative for full-screen viewing; falls back gracefully.
+const lgUrl = (u) => (u ? String(u).replace(/_sm\.(jpe?g|png|webp)(\?|$)/i, "_lg.$1$2") : u);
 
 // ─── page ───────────────────────────────────────────────────────────
 function renderPage(data, slug) {
@@ -155,20 +160,34 @@ function renderPage(data, slug) {
   const featured = m.featured_artwork || null;
 
   // Hero gallery: featured artwork first, then notable works. Up to 5.
-  const galleryUrls = [];
-  if (featured?.image_url) galleryUrls.push(featured.image_url);
+  // Each entry carries a caption + artwork id so the immersive hero can open
+  // the full, uncropped image in a lightbox (matching the mobile app).
+  const gallery = [];
+  const seenArt = new Set();
+  const pushArt = (o) => {
+    if (!o?.image_url || !o.id || seenArt.has(o.id)) return;
+    seenArt.add(o.id);
+    gallery.push({
+      url: o.image_url,
+      full: lgUrl(o.image_url),
+      id: o.id,
+      title: o.title || "",
+      by: o.artist_name || [o.year, o.museum_name].filter(Boolean).join(" · "),
+    });
+  };
+  if (featured) pushArt(featured);
   for (const w of works) {
-    if (w?.image_url && !galleryUrls.includes(w.image_url)) galleryUrls.push(w.image_url);
-    if (galleryUrls.length >= 5) break;
+    if (gallery.length >= 5) break;
+    pushArt(w);
   }
-  const heroImg = galleryUrls[0] || null;
+  const heroImg = gallery[0]?.url || null;
 
   const pageUrl = `https://artwhisper.app/movement/${esc(slug)}`;
   const ogImg = featured?.image_url || heroImg || "";
   const metaDesc = clip(overview || `${name} (${period}) — key artists, characteristics, notable works, and how to spot it.`, 180);
 
   // Sections
-  const heroHtml = renderHero(name, subtitle, galleryUrls);
+  const heroHtml = renderHero(name, subtitle, gallery);
   const overviewHtml = overview ? renderOverview(overview) : "";
   const factsHtml = renderFacts(facts);
   const charsHtml = renderChars(chars);
@@ -254,29 +273,50 @@ function renderPage(data, slug) {
     ${ARROW}
   </a>
 
+  <div class="lightbox" id="awlb" hidden>
+    <button class="lb__close" type="button" aria-label="Close">${CLOSE}</button>
+    <figure class="lb__fig">
+      <img class="lb__img" alt="" />
+      <figcaption class="lb__cap">
+        <strong class="lb__t"></strong>
+        <span class="lb__b"></span>
+        <a class="lb__link" href="#" target="_blank" rel="noopener">View artwork ${CHEV_R}</a>
+      </figcaption>
+    </figure>
+  </div>
+
   ${analyticsScript(slug, name)}
   ${carouselScript()}
   ${showMoreScript(slug)}
+  ${lightboxScript(slug)}
   ${monitorScript(slug, [{ kind: "hero", url: heroImg }])}
 </body>
 </html>`;
 }
 
 // ─── sections ───────────────────────────────────────────────────────
-function renderHero(name, subtitle, urls) {
-  const slides = (urls.length ? urls : [null])
-    .map((u) => {
-      const c = cssUrl(u);
-      return `<div class="hero__slide"${c ? ` style="background-image:url('${c}')"` : ""}></div>`;
+function renderHero(name, subtitle, gallery) {
+  const items = gallery.length ? gallery : [null];
+  const slides = items
+    .map((g) => {
+      if (!g) return `<div class="hero__slide"></div>`;
+      const c = cssUrl(g.url);
+      const full = cssUrl(g.full || g.url);
+      const orig = cssUrl(g.url);
+      return `<div class="hero__slide"${c ? ` style="background-image:url('${c}')"` : ""} data-full="${esc(full || "")}" data-orig="${esc(orig || "")}" data-id="${esc(g.id || "")}" data-title="${esc(g.title || "")}" data-by="${esc(g.by || "")}"></div>`;
     })
     .join("");
   const dots =
-    urls.length > 1
-      ? `<div class="hero__dots">${urls.map((_, i) => `<button class="hero__dot${i === 0 ? " is-active" : ""}" data-i="${i}" aria-label="Go to slide ${i + 1}"></button>`).join("")}</div>`
+    gallery.length > 1
+      ? `<div class="hero__dots">${gallery.map((_, i) => `<button class="hero__dot${i === 0 ? " is-active" : ""}" data-i="${i}" aria-label="Go to slide ${i + 1}"></button>`).join("")}</div>`
       : "";
+  const expand = gallery.length
+    ? `<button class="hero__expand" type="button" aria-label="View full artwork">${EXPAND}<span>View full</span></button>`
+    : "";
   return `<section class="hero">
     <div class="hero__track">${slides}</div>
     <div class="hero__scrim"></div>
+    ${expand}
     ${dots}
     <div class="hero__title">
       <span class="hero__eyebrow">ART MOVEMENT</span>
@@ -548,6 +588,32 @@ function carouselScript() {
 })();</script>`;
 }
 
+function lightboxScript(slug) {
+  return `<script>(function(){
+  var lb=document.getElementById("awlb"); if(!lb) return;
+  var img=lb.querySelector(".lb__img"),t=lb.querySelector(".lb__t"),b=lb.querySelector(".lb__b"),lk=lb.querySelector(".lb__link");
+  var slides=document.querySelectorAll(".hero__slide");
+  function ai(){var d=document.querySelector(".hero__dot.is-active");return d?(parseInt(d.getAttribute("data-i"),10)||0):0;}
+  function open(){
+    var s=slides[ai()]||slides[0]; if(!s) return;
+    var full=s.getAttribute("data-full")||s.getAttribute("data-orig")||""; if(!full) return;
+    var orig=s.getAttribute("data-orig")||"";
+    img.onerror=function(){ if(orig && img.src!==orig){ img.onerror=null; img.src=orig; } };
+    img.src=full; img.alt=s.getAttribute("data-title")||"";
+    t.textContent=s.getAttribute("data-title")||"";
+    b.textContent=s.getAttribute("data-by")||"";
+    var id=s.getAttribute("data-id");
+    if(id){ lk.href="/a/"+id; lk.style.display=""; } else { lk.style.display="none"; }
+    lb.hidden=false; document.documentElement.style.overflow="hidden";
+    try{ if(window.__awTrack) window.__awTrack("movement_hero_expand",{slug:${JSON.stringify(slug)},artwork_id:id||null}); }catch(e){}
+  }
+  function close(){ lb.hidden=true; document.documentElement.style.overflow=""; img.removeAttribute("src"); }
+  var btn=document.querySelector(".hero__expand"); if(btn) btn.addEventListener("click",open);
+  lb.addEventListener("click",function(e){ if(e.target===lb || e.target.closest(".lb__close")) close(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && !lb.hidden) close(); });
+})();</script>`;
+}
+
 function showMoreScript() {
   return `<script>(function(){
   var UP=${JSON.stringify(CHEV_U)},DOWN=${JSON.stringify(CHEV_D)};
@@ -610,12 +676,14 @@ h1,h2{margin:0}
 /* Hero gallery */
 .hero{position:relative;height:min(560px,64vh);overflow:hidden;background:#141428}
 .hero__track{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1)}
-.hero__slide{flex:0 0 100%;height:100%;background:#141428 center/contain no-repeat}
+.hero__slide{flex:0 0 100%;height:100%;background:#141428 center/cover no-repeat}
 .hero__scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.28) 44%,rgba(0,0,0,.7) 72%,rgba(0,0,0,.94) 100%)}
 .hero__dots{position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;gap:8px;z-index:2}
 .hero__dot{width:8px;height:8px;padding:0;border:0;border-radius:5px;background:rgba(255,255,255,.5);cursor:pointer;transition:width .25s,background .25s}
 .hero__dot:hover{background:rgba(255,255,255,.85)}
 .hero__dot.is-active{width:22px;background:#fff}
+.hero__expand{position:absolute;right:16px;top:16px;z-index:3;display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border:0;border-radius:22px;background:rgba(0,0,0,.42);color:#fff;font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:background .2s;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.hero__expand:hover{background:rgba(0,0,0,.66)}
 .hero__title{position:absolute;left:0;bottom:0;padding:0 var(--pad) 40px;max-width:1100px}
 .hero__eyebrow{color:rgba(255,255,255,.8);font-size:11px;letter-spacing:2.5px;font-weight:600}
 .hero__title h1{font-family:var(--serif);font-weight:700;font-size:58px;line-height:1.05;color:#fff;margin-top:10px;text-shadow:0 2px 24px rgba(0,0,0,.85)}
@@ -644,7 +712,7 @@ h1,h2{margin:0}
 /* Key artists */
 .arow{display:flex;flex-wrap:wrap;gap:20px}
 .acard{flex:1 1 160px;max-width:200px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;position:relative;padding:8px}
-.acard__av{width:88px;height:88px;border-radius:14px;background:var(--band-light) center/contain no-repeat;display:flex;align-items:center;justify-content:center;color:var(--t-secondary);font-weight:600;font-size:26px}
+.acard__av{width:88px;height:88px;border-radius:50%;background:#E8E4DF center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--t-secondary);font-weight:600;font-size:26px}
 .acard strong{font-size:15px;color:var(--t-primary)}
 .acard__line{font-size:12.5px;color:var(--t-secondary)}
 .acard__link{color:#B0A99E;transition:color .2s} .acard:hover .acard__link{color:var(--gold)}
@@ -653,7 +721,7 @@ h1,h2{margin:0}
 .wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .wcard{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s}
 .wcard:hover{box-shadow:0 6px 20px rgba(26,20,13,.08)}
-.wcard__img{height:180px;background:var(--card) center/contain no-repeat}
+.wcard__img{height:180px;background:#E8E4DF center/cover no-repeat}
 .wcard__t{padding:14px 16px 2px;font-family:var(--serif);font-weight:600;font-size:16px;color:var(--t-primary)}
 .wcard__m{padding:0 16px 16px;font-size:13px;color:var(--t-secondary)}
 
@@ -682,7 +750,7 @@ h1,h2{margin:0}
 .mvgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .mvc{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 14px 8px 8px;transition:box-shadow .2s}
 .mvc:hover{box-shadow:0 4px 14px rgba(26,20,13,.07)}
-.mvc__thumb{flex:none;width:54px;height:54px;border-radius:8px;background:var(--band-light) center/contain no-repeat}
+.mvc__thumb{flex:none;width:54px;height:54px;border-radius:8px;background:#E8E4DF center/cover no-repeat}
 .mvc__thumb--ph{background:linear-gradient(135deg,#EDE7DF,#DED5C8)}
 .mvc__txt{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
 .mvc__lbl{font-size:11px;letter-spacing:.5px;color:var(--t-sub)}
@@ -713,6 +781,18 @@ h1,h2{margin:0}
 .report{display:flex;justify-content:flex-end;padding:8px var(--pad) 40px;background:var(--bg)}
 .report a{display:inline-flex;align-items:center;gap:8px;color:var(--t-label);font-size:13px}
 .foot{display:flex;align-items:center;padding:20px var(--pad);background:var(--band-light);border-top:1px solid var(--border);color:var(--t-label);font-size:13px}
+
+/* Lightbox — full, uncropped artwork */
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(12,10,8,.93);display:flex;align-items:center;justify-content:center;padding:40px}
+.lightbox[hidden]{display:none}
+.lb__close{position:absolute;top:18px;right:20px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.lb__close:hover{background:rgba(255,255,255,.24)}
+.lb__fig{margin:0;display:flex;flex-direction:column;align-items:center;gap:16px;max-width:94vw}
+.lb__img{max-width:94vw;max-height:78vh;width:auto;height:auto;object-fit:contain;border-radius:4px;box-shadow:0 16px 60px rgba(0,0,0,.55);background:#1a1a1a}
+.lb__cap{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:#fff}
+.lb__t{font-family:var(--serif);font-size:18px;font-weight:600}
+.lb__b{font-size:13px;color:rgba(255,255,255,.68)}
+.lb__link{display:inline-flex;align-items:center;gap:4px;margin-top:4px;color:var(--cta);font-size:13px;font-weight:500}
 
 /* Sticky bar (mobile) */
 .stickybar{display:none}
