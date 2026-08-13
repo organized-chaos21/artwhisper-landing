@@ -4,3 +4,4 @@ Allow: /
 Disallow: /api/
 
 Sitemap: https://artwhisper.app/sitemap-index.xml
+Sitemap: https://artwhisper.app/movements-sitemap.xml
