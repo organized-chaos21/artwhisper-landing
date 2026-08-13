@@ -56,6 +56,8 @@ function html(body, status, maxAge) {
 const ARROW = `<svg class="arr" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
 const CHEV_R = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`;
 const LOCK = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const EXPAND = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
+const CLOSE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
 function renderPage(data, id) {
   const a = data.artist || {};
@@ -106,7 +108,7 @@ function renderPage(data, id) {
   </header>
 
   <section class="ahero">
-    ${pc ? `<span class="ahero__pic" style="background-image:url('${pc}')"></span>` : `<span class="ahero__pic ahero__pic--ph">${esc(initials)}</span>`}
+    ${pc ? `<button class="ahero__picwrap" type="button" aria-label="View full portrait" data-full="${esc(pc)}" data-title="${esc(name)}" data-by="${esc(line)}"><span class="ahero__pic" style="background-image:url('${pc}')"></span><span class="ahero__zoom">${EXPAND}</span></button>` : `<span class="ahero__pic ahero__pic--ph">${esc(initials)}</span>`}
     <div class="ahero__id">
       <span class="eyebrow eyebrow--gold">ARTIST</span>
       <h1>${esc(name)}</h1>
@@ -140,7 +142,19 @@ function renderPage(data, id) {
     <span class="stickybar__left"><img class="stickybar__logo" src="/logo.png" alt="" width="32" height="32" /><strong>Open the App</strong></span>${ARROW}
   </a>
 
+  <div class="lightbox" id="awlb" hidden>
+    <button class="lb__close" type="button" aria-label="Close">${CLOSE}</button>
+    <figure class="lb__fig">
+      <img class="lb__img" alt="" />
+      <figcaption class="lb__cap">
+        <strong class="lb__t"></strong>
+        <span class="lb__b"></span>
+      </figcaption>
+    </figure>
+  </div>
+
   ${analyticsScript(id, name)}
+  ${lightboxScript(id)}
   ${monitorScript(id, [{ kind: "portrait", url: portrait }])}
 </body>
 </html>`;
@@ -197,7 +211,28 @@ function analyticsScript(id, name) {
   var D=${cfg};
   try{ posthog.init(D.key,{api_host:D.host,capture_pageview:true});
     posthog.capture("artist_page_view",{artist_id:D.id,artist:D.name}); }catch(e){}
+  window.__awTrack=function(ev,props){try{posthog.capture(ev,Object.assign({artist_id:D.id,artist:D.name},props||{}))}catch(e){}};
 </script>`;
+}
+
+function lightboxScript(id) {
+  return `<script>(function(){
+  var lb=document.getElementById("awlb"); if(!lb) return;
+  var img=lb.querySelector(".lb__img"),t=lb.querySelector(".lb__t"),b=lb.querySelector(".lb__b");
+  var btn=document.querySelector(".ahero__picwrap"); if(!btn) return;
+  function open(){
+    var full=btn.getAttribute("data-full")||""; if(!full) return;
+    img.src=full; img.alt=btn.getAttribute("data-title")||"";
+    t.textContent=btn.getAttribute("data-title")||"";
+    b.textContent=btn.getAttribute("data-by")||"";
+    lb.hidden=false; document.documentElement.style.overflow="hidden";
+    try{ if(window.__awTrack) window.__awTrack("artist_portrait_expand",{artist_id:${JSON.stringify(id)}}); }catch(e){}
+  }
+  function close(){ lb.hidden=true; document.documentElement.style.overflow=""; img.removeAttribute("src"); }
+  btn.addEventListener("click",open);
+  lb.addEventListener("click",function(e){ if(e.target===lb || e.target.closest(".lb__close")) close(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape" && !lb.hidden) close(); });
+})();</script>`;
 }
 
 function monitorScript(id, bgImages) {
@@ -227,6 +262,9 @@ img{max-width:100%;display:block}a{color:inherit;text-decoration:none}h1,h2{marg
 /* artist hero */
 .ahero{display:flex;align-items:center;gap:32px;padding:52px var(--pad);background:var(--band-light);border-bottom:1px solid var(--border)}
 .ahero__pic{width:132px;height:132px;border-radius:50%;flex:none;background:#E8E4DF center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--t-secondary);font-weight:600;font-size:40px;box-shadow:0 4px 18px rgba(26,20,13,.12)}
+.ahero__picwrap{position:relative;flex:none;padding:0;border:0;background:none;cursor:zoom-in}
+.ahero__zoom{position:absolute;right:-2px;bottom:-2px;width:32px;height:32px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--band-light);box-shadow:0 2px 8px rgba(26,20,13,.18);transition:transform .15s}
+.ahero__picwrap:hover .ahero__zoom{transform:scale(1.08)}
 .ahero__id h1{font-family:var(--serif);font-weight:700;font-size:44px;line-height:1.05;color:var(--t-primary)}
 .ahero__line{margin:8px 0 0;color:var(--t-secondary);font-size:17px}
 .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
@@ -250,6 +288,15 @@ img{max-width:100%;display:block}a{color:inherit;text-decoration:none}h1,h2{marg
 .cta__left{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:var(--t-body)}.cta__mark{width:26px;height:26px;border-radius:50%;flex:none;display:block}
 .badges{display:flex;align-items:center;gap:12px}.badge{display:inline-flex;transition:opacity .15s ease}.badge:hover{opacity:.85}.badge img{height:44px;width:auto;display:block}
 .foot{display:flex;align-items:center;padding:20px var(--pad);background:var(--band-light);border-top:1px solid var(--border);color:var(--t-label);font-size:13px}
+.lightbox{position:fixed;inset:0;z-index:100;background:rgba(12,10,8,.93);display:flex;align-items:center;justify-content:center;padding:40px}
+.lightbox[hidden]{display:none}
+.lb__close{position:absolute;top:18px;right:20px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.lb__close:hover{background:rgba(255,255,255,.24)}
+.lb__fig{margin:0;display:flex;flex-direction:column;align-items:center;gap:16px;max-width:94vw}
+.lb__img{max-width:94vw;max-height:80vh;width:auto;height:auto;object-fit:contain;border-radius:4px;box-shadow:0 16px 60px rgba(0,0,0,.55);background:#1a1a1a}
+.lb__cap{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:#fff}
+.lb__t{font-family:var(--serif);font-size:18px;font-weight:600}
+.lb__b{font-size:13px;color:rgba(255,255,255,.68)}
 .stickybar{display:none}
 .empty{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:40px;max-width:520px;margin:0 auto}
 .empty__logo{margin-bottom:8px;border-radius:50%}.empty h1{font-family:var(--serif);font-weight:600;font-size:26px;color:var(--t-primary)}
