@@ -291,10 +291,19 @@ function renderOverview(text) {
     .split(/\n{2,}|\r?\n/)
     .map((p) => p.trim())
     .filter(Boolean);
-  const body = (paras.length ? paras : [text]).map((p) => `<p>${esc(p)}</p>`).join("");
+  const all = paras.length ? paras : [text];
+  // Show the opening paragraph; collapse the rest behind a Show more.
+  const body = all
+    .map((p, i) => `<p${i >= 1 ? ' class="xtra is-hidden"' : ""}>${esc(p)}</p>`)
+    .join("");
+  const more =
+    all.length > 1
+      ? `<button class="showmore" data-section="overview"><span class="showmore__t">Show more</span><span class="showmore__i">${CHEV_D}</span></button>`
+      : "";
   return `<section class="sec overview">
     <span class="eyebrow eyebrow--muted">OVERVIEW</span>
     <div class="overview__body">${body}</div>
+    ${more}
   </section>`;
 }
 
