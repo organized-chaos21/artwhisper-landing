@@ -74,7 +74,41 @@ export async function onRequestGet(context) {
   }
 
   if (!data || !data.movement) return html(renderNotFound(), 404, 60);
+
+  // The movement API doesn't return artwork images for related/before/after
+  // movements, so the Related + prev/next cards would have no thumbnail. Fetch
+  // each one's featured-artwork image in parallel (only when missing, so this
+  // becomes a no-op once the API is enhanced to include it). Edge-cached 1h.
+  await attachThumbs([
+    ...(data.related_movements || []),
+    data.before_movement,
+    data.after_movement,
+  ].filter(Boolean));
+
   return html(renderPage(data, slug), 200, 3600);
+}
+
+async function attachThumbs(movements) {
+  await Promise.allSettled(
+    movements.map(async (mv) => {
+      if (!mv || mv.image_url || !mv.slug) return;
+      try {
+        const c = new AbortController();
+        const t = setTimeout(() => c.abort(), 3000);
+        const r = await fetch(
+          `${API_BASE}/v1/movements/${encodeURIComponent(mv.slug)}`,
+          { signal: c.signal, headers: { accept: "application/json" } },
+        );
+        clearTimeout(t);
+        if (r.ok) {
+          const d = await r.json();
+          mv.image_url = d?.movement?.featured_artwork?.image_url || null;
+        }
+      } catch {
+        /* leave without a thumbnail */
+      }
+    }),
+  );
 }
 
 function html(body, status, maxAge) {
@@ -98,6 +132,7 @@ const ARROW = `<svg class="arr" width="15" height="15" viewBox="0 0 24 24" fill=
 const CHEV_R = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>`;
 const CHEV_L = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>`;
 const CHEV_D = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
+const CHEV_U = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg>`;
 
 // ─── page ───────────────────────────────────────────────────────────
 function renderPage(data, slug) {
@@ -235,14 +270,14 @@ function renderHero(name, subtitle, urls) {
       return `<div class="hero__slide"${c ? ` style="background-image:url('${c}')"` : ""}></div>`;
     })
     .join("");
-  const arrows =
+  const dots =
     urls.length > 1
-      ? `<button class="hero__nav hero__prev" aria-label="Previous">${CHEV_L}</button><button class="hero__nav hero__next" aria-label="Next">${CHEV_R}</button>`
+      ? `<div class="hero__dots">${urls.map((_, i) => `<button class="hero__dot${i === 0 ? " is-active" : ""}" data-i="${i}" aria-label="Go to slide ${i + 1}"></button>`).join("")}</div>`
       : "";
   return `<section class="hero">
     <div class="hero__track">${slides}</div>
     <div class="hero__scrim"></div>
-    ${arrows}
+    ${dots}
     <div class="hero__title">
       <span class="hero__eyebrow">ART MOVEMENT</span>
       <h1>${esc(name)}</h1>
@@ -269,7 +304,7 @@ function collapsible(items, initial, sectionKey, cardHtml) {
     .map((it, i) => cardHtml(it, i, i >= initial))
     .join("");
   const more = items.length > initial
-    ? `<button class="showmore" data-section="${esc(sectionKey)}">Show more ${CHEV_D}</button>`
+    ? `<button class="showmore" data-section="${esc(sectionKey)}"><span class="showmore__t">Show more</span><span class="showmore__i">${CHEV_D}</span></button>`
     : "";
   return { cards, more };
 }
@@ -277,7 +312,7 @@ function collapsible(items, initial, sectionKey, cardHtml) {
 function renderFacts(facts) {
   if (!facts.length) return "";
   const { cards, more } = collapsible(facts, 4, "did_you_know", (f, i, hidden) =>
-    `<div class="fcard${hidden ? " is-hidden" : ""}"><span class="fcard__mark">${esc(String(i + 1))}</span><p>${esc(f)}</p></div>`,
+    `<div class="fcard${hidden ? " xtra is-hidden" : ""}"><span class="fcard__mark">${esc(String(i + 1))}</span><p>${esc(f)}</p></div>`,
   );
   return `<section class="sec facts">
     <span class="eyebrow eyebrow--gold">DID YOU KNOW?</span>
@@ -289,7 +324,7 @@ function renderFacts(facts) {
 function renderChars(chars) {
   if (!chars.length) return "";
   const { cards, more } = collapsible(chars, 3, "key_characteristics", (c, i, hidden) =>
-    `<div class="ccard${hidden ? " is-hidden" : ""}">
+    `<div class="ccard${hidden ? " xtra is-hidden" : ""}">
       <strong>${esc(c.title || "")}</strong>
       <p>${esc(c.description || "")}</p>
       ${c.example_artwork ? `<span class="ccard__eg">e.g. ${esc(c.example_artwork)}</span>` : ""}
@@ -332,7 +367,7 @@ function renderWorks(works) {
   const { cards, more } = collapsible(works, 6, "notable_works", (w, i, hidden) => {
     const c = cssUrl(w.image_url);
     const meta = [w.year, w.museum_name].filter(Boolean).join(" · ");
-    return `<a class="wcard${hidden ? " is-hidden" : ""}" href="/a/${esc(w.id)}">
+    return `<a class="wcard${hidden ? " xtra is-hidden" : ""}" href="/a/${esc(w.id)}">
       <span class="wcard__img"${c ? ` style="background-image:url('${c}')"` : ""}></span>
       <span class="wcard__t">${esc(w.title || "")}</span>
       ${meta ? `<span class="wcard__m">${esc(meta)}</span>` : ""}
@@ -370,7 +405,7 @@ function renderTimeline(t) {
 function renderSpot(spot) {
   if (!spot.length) return "";
   const { cards, more } = collapsible(spot, 3, "how_to_spot_it", (s, i, hidden) =>
-    `<div class="spot${hidden ? " is-hidden" : ""}"><span class="spot__num">${esc(String(i + 1))}</span><p>${esc(s)}</p></div>`,
+    `<div class="spot${hidden ? " xtra is-hidden" : ""}"><span class="spot__num">${esc(String(i + 1))}</span><p>${esc(s)}</p></div>`,
   );
   return `<section class="sec spotit">
     <span class="eyebrow eyebrow--gold">LOOK CLOSER</span>
@@ -477,25 +512,30 @@ function carouselScript() {
   return `<script>(function(){
   var track=document.querySelector(".hero__track"); if(!track) return;
   var n=track.children.length; if(n<2) return;
+  var dots=document.querySelectorAll(".hero__dot");
   var i=0,timer;
-  function go(k){i=((k%n)+n)%n;track.style.transform="translateX("+(-i*100)+"%)";}
-  function next(){go(i+1);} function prev(){go(i-1);}
+  function setActive(){Array.prototype.forEach.call(dots,function(d,k){d.classList.toggle("is-active",k===i)});}
+  function go(k){i=((k%n)+n)%n;track.style.transform="translateX("+(-i*100)+"%)";setActive();}
+  function next(){go(i+1);}
   function reset(){clearInterval(timer);timer=setInterval(next,8000);}
-  var p=document.querySelector(".hero__prev"),x=document.querySelector(".hero__next");
-  if(p)p.addEventListener("click",function(){prev();reset();});
-  if(x)x.addEventListener("click",function(){next();reset();});
+  Array.prototype.forEach.call(dots,function(d){d.addEventListener("click",function(){go(parseInt(d.getAttribute("data-i"),10)||0);reset();});});
   reset();
 })();</script>`;
 }
 
 function showMoreScript() {
   return `<script>(function(){
+  var UP=${JSON.stringify(CHEV_U)},DOWN=${JSON.stringify(CHEV_D)};
   Array.prototype.forEach.call(document.querySelectorAll(".showmore"),function(btn){
+    var sec=btn.closest(".sec"); if(!sec) return;
+    var t=btn.querySelector(".showmore__t"),ic=btn.querySelector(".showmore__i");
     btn.addEventListener("click",function(){
-      var sec=btn.parentNode;
-      Array.prototype.forEach.call(sec.querySelectorAll(".is-hidden"),function(el){el.classList.remove("is-hidden");});
-      btn.style.display="none";
-      if(window.__awTrack)window.__awTrack("movement_show_more",{section:btn.getAttribute("data-section")});
+      var extras=sec.querySelectorAll(".xtra");
+      var collapsed=sec.querySelector(".xtra.is-hidden")!=null;
+      Array.prototype.forEach.call(extras,function(el){el.classList.toggle("is-hidden",!collapsed);});
+      if(t)t.textContent=collapsed?"Show less":"Show more";
+      if(ic)ic.innerHTML=collapsed?UP:DOWN;
+      if(window.__awTrack)window.__awTrack(collapsed?"movement_show_more":"movement_show_less",{section:btn.getAttribute("data-section")});
     });
   });
 })();</script>`;
@@ -547,9 +587,10 @@ h1,h2{margin:0}
 .hero__track{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1)}
 .hero__slide{flex:0 0 100%;height:100%;background:#141428 center/cover no-repeat}
 .hero__scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.28) 44%,rgba(0,0,0,.7) 72%,rgba(0,0,0,.94) 100%)}
-.hero__nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:22px;border:0;background:rgba(0,0,0,.35);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
-.hero__nav:hover{background:rgba(0,0,0,.55)}
-.hero__prev{left:24px} .hero__next{right:24px}
+.hero__dots{position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;gap:8px;z-index:2}
+.hero__dot{width:8px;height:8px;padding:0;border:0;border-radius:5px;background:rgba(255,255,255,.5);cursor:pointer;transition:width .25s,background .25s}
+.hero__dot:hover{background:rgba(255,255,255,.85)}
+.hero__dot.is-active{width:22px;background:#fff}
 .hero__title{position:absolute;left:0;bottom:0;padding:0 var(--pad) 40px;max-width:1100px}
 .hero__eyebrow{color:rgba(255,255,255,.8);font-size:11px;letter-spacing:2.5px;font-weight:600}
 .hero__title h1{font-family:var(--serif);font-weight:700;font-size:58px;line-height:1.05;color:#fff;margin-top:10px;text-shadow:0 2px 24px rgba(0,0,0,.85)}
@@ -624,6 +665,7 @@ h1,h2{margin:0}
 /* Show more */
 .showmore{display:inline-flex;align-items:center;gap:5px;margin:20px auto 0;padding:9px 18px;background:none;border:1px solid var(--border);border-radius:20px;color:var(--gold);font-family:var(--sans);font-size:13px;font-weight:500;cursor:pointer;transition:background .2s}
 .showmore:hover{background:var(--band-light)}
+.showmore__i{display:inline-flex;align-items:center}
 .sec .showmore{display:flex;width:fit-content;margin-left:auto;margin-right:auto}
 .is-hidden{display:none!important}
 
@@ -658,7 +700,7 @@ h1,h2{margin:0}
   .nav__open-lg{display:none} .nav__open-sm{display:inline}
   .hero{height:min(400px,52vh)}
   .hero__title{padding:0 20px 26px} .hero__title h1{font-size:32px} .hero__title p{font-size:16px}
-  .hero__nav{width:36px;height:36px} .hero__prev{left:12px} .hero__next{right:12px}
+  .hero__dots{bottom:14px}
   .sec{padding:32px 20px}
   .overview__body p{font-size:16px}
   .fgrid,.cgrid,.wgrid,.mvgrid{grid-template-columns:1fr}
