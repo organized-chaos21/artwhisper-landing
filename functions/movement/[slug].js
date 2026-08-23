@@ -366,8 +366,8 @@ function renderArtists(artists) {
       const av = c
         ? `<span class="acard__av" style="background-image:url('${c}')"></span>`
         : `<span class="acard__av acard__av--ph">${esc((a.name || "?").slice(0, 1))}</span>`;
-      // Artist deep-link (opens the app / future artist web page).
-      return `<a class="acard" href="https://artwhisper.app/artist/${esc(a.id)}">
+      // Artist deep-link — prefer the pretty slug URL, fall back to UUID (T1-818).
+      return `<a class="acard" href="https://artwhisper.app/artist/${esc(a.slug || a.id)}">
         ${av}
         <strong>${esc(a.name || "")}</strong>
         ${line ? `<span class="acard__line">${esc(line)}</span>` : ""}

@@ -45,7 +45,22 @@ export async function onRequestGet(context) {
     data = await res.json();
   } catch { return html(renderNotFound(), 502, 0); }
   if (!data || !data.artist) return html(renderNotFound(), 404, 60);
-  return html(renderPage(data, id), 200, 3600);
+
+  // Canonicalize to the pretty slug URL (T1-818): a UUID request, or a stale
+  // ref that resolved via the alias map, 301-redirects to /artist/{slug}. This
+  // consolidates SEO signals on one URL and keeps old links working.
+  const canonical = data.meta && data.meta.canonical_slug;
+  if (canonical && canonical !== id) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        location: `https://artwhisper.app/artist/${encodeURIComponent(canonical)}`,
+        "cache-control": "public, max-age=300, s-maxage=86400",
+      },
+    });
+  }
+
+  return html(renderPage(data, canonical || id), 200, 3600);
 }
 
 function html(body, status, maxAge) {
@@ -180,7 +195,7 @@ function renderWorks(works, first) {
 }
 
 function renderInfluences(by, infd) {
-  const chip = (p) => `<a class="ichip" href="/artist/${esc(p.artist_id)}"><strong>${esc(p.name || "")}</strong>${p.movement ? `<span>${esc(p.movement)}</span>` : ""} ${CHEV_R}</a>`;
+  const chip = (p) => `<a class="ichip" href="/artist/${esc(p.slug || p.artist_id)}"><strong>${esc(p.name || "")}</strong>${p.movement ? `<span>${esc(p.movement)}</span>` : ""} ${CHEV_R}</a>`;
   const cols = [];
   if (by.length) cols.push(`<div class="icol"><span class="icol__h">Influenced by</span><div class="ichips">${by.slice(0, 4).filter((p) => p.artist_id).map(chip).join("")}</div></div>`);
   if (infd.length) cols.push(`<div class="icol"><span class="icol__h">Influenced</span><div class="ichips">${infd.slice(0, 4).filter((p) => p.artist_id).map(chip).join("")}</div></div>`);
