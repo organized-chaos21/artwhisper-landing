@@ -5,3 +5,5 @@ Disallow: /api/
 
 Sitemap: https://artwhisper.app/sitemap-index.xml
 Sitemap: https://artwhisper.app/movements-sitemap.xml
+Sitemap: https://artwhisper.app/artists-sitemap.xml
+Sitemap: https://artwhisper.app/artworks-sitemap.xml
