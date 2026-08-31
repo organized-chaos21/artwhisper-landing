@@ -21,6 +21,11 @@ const APP_STORE_URL =
   "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=share-web_preview";
 const FETCH_TIMEOUT_MS = 5000;
 
+// PostHog (public client key — safe to embed; same project as the app and the
+// movement/artist web pages). Added so pin/link traffic to /a/{slug} is measured.
+const POSTHOG_KEY = "phc_d9QDyua38ePkoqG4KtR2Wa9XUasTPuvfVMJBJInE7eS";
+const POSTHOG_HOST = "https://us.i.posthog.com";
+
 // Slugs are lowercase words joined by hyphens (see backend slug.ts). Reject
 // anything else up front so we never proxy junk into the API.
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -255,6 +260,7 @@ function renderPage(data, slug) {
     <span class="stickybar__left"><img class="stickybar__logo" src="/logo.png" alt="" width="32" height="32" /><strong>Open the App</strong></span>
     ${ARROW}
   </a>
+  ${analyticsScript(slug, title)}
   ${monitorScript(slug, [
     { kind: "hero", url: heroImg },
     { kind: "artist-portrait", url: artist?.image_url || null },
@@ -424,6 +430,20 @@ const PLAY_TRI = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentC
 // key shipped in the mobile app).
 const SENTRY_INGEST =
   "https://o4510820807671808.ingest.us.sentry.io/api/4510900475592704/envelope/?sentry_key=e6024fe36e2671d1048f9c3b1c683f21&sentry_version=7";
+
+// ─── Analytics ──────────────────────────────────────────────────────
+// Mirrors the movement/artist web pages: loads PostHog (public client key)
+// and captures an artwork_page_view. This is what lets UTM-tagged inbound
+// traffic (e.g. Pinterest pins) be attributed in the same PostHog project.
+function analyticsScript(slug, title) {
+  const cfg = JSON.stringify({ key: POSTHOG_KEY, host: POSTHOG_HOST, slug, title });
+  return `<script>!function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+  var D=${cfg};
+  try{ posthog.init(D.key,{api_host:D.host,capture_pageview:true,persistence:"localStorage+cookie"});
+    posthog.capture("artwork_page_view",{slug:D.slug,artwork:D.title}); }catch(e){}
+  window.__awTrack=function(ev,props){try{posthog.capture(ev,Object.assign({slug:D.slug,artwork:D.title},props||{}))}catch(e){}};
+</script>`;
+}
 
 function monitorScript(slug, bgImages) {
   const cfg = JSON.stringify({
