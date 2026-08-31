@@ -26,6 +26,29 @@ const FETCH_TIMEOUT_MS = 5000;
 const POSTHOG_KEY = "phc_d9QDyua38ePkoqG4KtR2Wa9XUasTPuvfVMJBJInE7eS";
 const POSTHOG_HOST = "https://us.i.posthog.com";
 
+// Build the store-install links, carrying inbound attribution through to the app.
+// - Android: Google Play reads the `referrer` param via the Install Referrer API,
+//   so we pass utm_source + the pin's slug (utm_content) for per-pin attribution.
+// - iOS: Apple only exposes a campaign-level token (`ct`), never per-pin, so we set
+//   ct to the source (e.g. "pinterest") for a coarse App Store Connect campaign count.
+// Falls back to the original share-page tags when there's no inbound utm_source.
+function buildStoreLinks(src, content) {
+  const source = src && /^[a-z0-9_-]{1,40}$/i.test(src) ? src.toLowerCase() : null;
+  const slug = content && /^[a-z0-9-]{1,140}$/i.test(content) ? content : null;
+  if (!source) {
+    return {
+      play: "https://play.google.com/store/apps/details?id=app.artwhisper&utm_source=share&utm_medium=web_preview&utm_campaign=share_page",
+      appstore: "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=share-web_preview",
+    };
+  }
+  const ref = new URLSearchParams({ utm_source: source, utm_medium: "web", utm_campaign: source });
+  if (slug) ref.set("utm_content", slug);
+  return {
+    play: "https://play.google.com/store/apps/details?id=app.artwhisper&referrer=" + encodeURIComponent(ref.toString()),
+    appstore: "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=" + encodeURIComponent(source.slice(0, 40)),
+  };
+}
+
 // Slugs are lowercase words joined by hyphens (see backend slug.ts). Reject
 // anything else up front so we never proxy junk into the API.
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -99,7 +122,7 @@ export async function onRequestGet(context) {
   if (!data || !data.artwork) return html(renderNotFound(), 404, 60);
 
   // Success — cache at the edge for an hour; the underlying artwork is stable.
-  return html(renderPage(data, slug), 200, 3600);
+  return html(renderPage(data, slug, context.request.url), 200, 3600);
 }
 
 /** Wrap an HTML string in a Response with sane caching + security headers. */
@@ -120,9 +143,22 @@ function html(body, status, maxAge) {
 }
 
 // ─── Page rendering ─────────────────────────────────────────────────
-function renderPage(data, slug) {
+function renderPage(data, slug, reqUrl) {
   const art = data.artwork;
   const artist = data.artist || null;
+
+  // Carry inbound attribution (e.g. a Pinterest pin's utm_source + utm_content)
+  // through to the store-install links.
+  let inParams;
+  try {
+    inParams = new URL(reqUrl).searchParams;
+  } catch {
+    inParams = new URLSearchParams();
+  }
+  const { play: PLAY_LINK, appstore: APP_STORE_LINK } = buildStoreLinks(
+    inParams.get("utm_source"),
+    inParams.get("utm_content"),
+  );
 
   const title = art.title || "Untitled";
   const artistName = artist?.name || null;
@@ -166,9 +202,9 @@ function renderPage(data, slug) {
 
   const about = art.about ? renderAbout(art.about) : "";
   const movements = renderMovements(art.movement_tags);
-  const notice = renderNotice(art.what_to_notice);
-  const audio = renderAudio(hookRaw);
-  const artistSection = renderArtist(artist);
+  const notice = renderNotice(art.what_to_notice, PLAY_LINK);
+  const audio = renderAudio(hookRaw, PLAY_LINK);
+  const artistSection = renderArtist(artist, PLAY_LINK);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -209,7 +245,7 @@ function renderPage(data, slug) {
       <img class="nav__logo" src="/logo.png" alt="Art Whisper" width="30" height="30" />
       <span>Art Whisper</span>
     </a>
-    <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener">
+    <a class="nav__open" href="${PLAY_LINK}" target="_blank" rel="noopener">
       <span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}
     </a>
   </header>
@@ -230,10 +266,10 @@ function renderPage(data, slug) {
       <span>Get the full experience in Art Whisper</span>
     </div>
     <div class="badges">
-      <a class="badge" href="${PLAY_URL}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play">
+      <a class="badge" href="${PLAY_LINK}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play">
         <img src="/badges/google-play.svg" alt="Get it on Google Play" height="44" />
       </a>
-      <a class="badge" href="${APP_STORE_URL}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store">
+      <a class="badge" href="${APP_STORE_LINK}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store">
         <img src="/badges/app-store.svg" alt="Download on the App Store" height="44" />
       </a>
     </div>
@@ -256,7 +292,7 @@ function renderPage(data, slug) {
     <span>© ${new Date().getFullYear()} Bright Star. All rights reserved.</span>
   </footer>
 
-  <a class="stickybar" href="${PLAY_URL}" target="_blank" rel="noopener">
+  <a class="stickybar" href="${PLAY_LINK}" target="_blank" rel="noopener">
     <span class="stickybar__left"><img class="stickybar__logo" src="/logo.png" alt="" width="32" height="32" /><strong>Open the App</strong></span>
     ${ARROW}
   </a>
@@ -313,7 +349,7 @@ function renderMovements(tags) {
   </section>`;
 }
 
-function renderNotice(items) {
+function renderNotice(items, playUrl) {
   if (!Array.isArray(items) || !items.length) return "";
   const shown = items.slice(0, 3);
   const remaining = items.length - shown.length;
@@ -325,7 +361,7 @@ function renderNotice(items) {
     .join("");
   const lock =
     remaining > 0
-      ? `<a class="lockcta" href="${PLAY_URL}" target="_blank" rel="noopener">${LOCK}<span>${remaining} more detail${remaining === 1 ? "" : "s"} waiting — unlock in Art Whisper</span>${ARROW}</a>`
+      ? `<a class="lockcta" href="${playUrl}" target="_blank" rel="noopener">${LOCK}<span>${remaining} more detail${remaining === 1 ? "" : "s"} waiting — unlock in Art Whisper</span>${ARROW}</a>`
       : "";
   return `<section class="notice">
     <div class="notice__head">
@@ -337,7 +373,7 @@ function renderNotice(items) {
   </section>`;
 }
 
-function renderAudio(preview) {
+function renderAudio(preview, playUrl) {
   const bars = [10, 16, 22, 14, 8, 20, 26, 18, 12, 24, 16, 10, 20, 14, 22, 8, 18, 26, 12, 16, 20, 10, 14, 22]
     .map((h) => `<span style="height:${h}px"></span>`)
     .join("");
@@ -348,11 +384,11 @@ function renderAudio(preview) {
       <span class="audio__play">${PLAY_TRI}</span>
       <div class="audio__wave" aria-hidden="true">${bars}</div>
     </div>
-    <a class="audio__cta" href="${PLAY_URL}" target="_blank" rel="noopener">Hear the full story in the app ${ARROW}</a>
+    <a class="audio__cta" href="${playUrl}" target="_blank" rel="noopener">Hear the full story in the app ${ARROW}</a>
   </section>`;
 }
 
-function renderArtist(artist) {
+function renderArtist(artist, playUrl) {
   if (!artist || !artist.name) return "";
   const name = artist.name;
   const firstName = name.split(/\s+/)[0];
@@ -381,7 +417,7 @@ function renderArtist(artist) {
         </div>
       </div>
       ${bio ? `<p class="artist__bio">${esc(bio)}</p>` : ""}
-      <a class="linkcta" href="${PLAY_URL}" target="_blank" rel="noopener">Read ${esc(firstName)}'s full story in Art Whisper ${ARROW}</a>
+      <a class="linkcta" href="${playUrl}" target="_blank" rel="noopener">Read ${esc(firstName)}'s full story in Art Whisper ${ARROW}</a>
     </div>
   </section>`;
 }
