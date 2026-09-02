@@ -192,6 +192,7 @@ function renderPage(data, slug, reqUrl) {
 
   // ── Sections ──
   const metaBar = renderMetaBar(art);
+  const structuredData = renderStructuredData(art, artist, pageUrl, heroImg);
   const pullQuote = art.quick_context
     ? `<section class="band quote">
          <span class="quote__rule"></span>
@@ -214,6 +215,7 @@ function renderPage(data, slug, reqUrl) {
   <title>${esc(ogTitle)} · Art Whisper</title>
   <meta name="description" content="${esc(ogDesc)}" />
   <link rel="canonical" href="${pageUrl}" />
+  ${structuredData}
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -305,21 +307,66 @@ function renderPage(data, slug, reqUrl) {
 </html>`;
 }
 
+// Append our attribution tag to a museum object-page URL. The museum's own analytics
+// then show artwhisper.app as the referring source (T1-730, Ziv's call). museum_url is
+// a bare canonical URL from our API, so a simple ?/& join is safe.
+function withUtm(url) {
+  const u = String(url);
+  return u + (u.includes("?") ? "&" : "?") + "utm_source=artwhisper.app";
+}
+
+// Small diagonal "opens in a new tab" glyph for the outbound museum link.
+const EXT_ARROW = `<svg class="meta__ext" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>`;
+
+// The meta bar carries the "object label" facts, each shown only when present — coverage
+// varies a lot by source, so a blank label is never rendered (T1-730). The museum name
+// doubles as the outbound "view on museum website" link when we can build one.
 function renderMetaBar(art) {
-  const cells = [
-    ["MEDIUM", art.medium],
-    ["DIMENSIONS", art.dimensions],
-    ["LOCATION", art.museum_name],
-  ].filter(([, v]) => v);
+  const cell = (l, vHtml) =>
+    `<div class="meta__cell"><span class="meta__label">${l}</span><span class="meta__val">${vHtml}</span></div>`;
+  const cells = [];
+  if (art.medium) cells.push(cell("MEDIUM", esc(art.medium)));
+  if (art.dimensions) cells.push(cell("DIMENSIONS", esc(art.dimensions)));
+  if (art.museum_name) {
+    const label = esc(art.museum_name);
+    const val = art.museum_url
+      ? `<a class="meta__link" href="${esc(withUtm(art.museum_url))}" target="_blank" rel="noopener noreferrer"
+            onclick="window.__awTrack&&window.__awTrack('museum_link_clicked')">${label}${EXT_ARROW}</a>`
+      : label;
+    cells.push(cell("LOCATION", val));
+  }
+  if (art.department) cells.push(cell("COLLECTION", esc(art.department)));
+  if (art.culture) cells.push(cell("CULTURE", esc(art.culture)));
+  if (art.credit_line) cells.push(cell("CREDIT LINE", esc(art.credit_line)));
   if (!cells.length) return "";
   return `<section class="meta">
-    ${cells
-      .map(
-        ([l, v]) =>
-          `<div class="meta__cell"><span class="meta__label">${l}</span><span class="meta__val">${esc(v)}</span></div>`,
-      )
-      .join("")}
+    ${cells.join("")}
   </section>`;
+}
+
+// schema.org/VisualArtwork structured data (T1-730, the original SEO ask). Emitted only
+// with the fields we actually have, so search engines get a real machine-readable record
+// of the work, its creator, the holding museum and provenance. JSON-LD is escaped so a
+// stray "</script>" or "<" in museum text can't break out of the script element.
+function renderStructuredData(art, artist, pageUrl, heroImg) {
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "VisualArtwork",
+    name: art.title || "Untitled",
+    url: pageUrl,
+  };
+  if (heroImg) data.image = heroImg;
+  if (artist?.name) data.creator = { "@type": "Person", name: artist.name };
+  if (art.year) data.dateCreated = String(art.year);
+  if (art.medium) data.artMedium = art.medium;
+  if (art.credit_line) data.creditText = art.credit_line;
+  if (art.culture) data.locationCreated = { "@type": "Place", name: art.culture };
+  if (art.museum_name) {
+    data.isPartOf = { "@type": "Museum", name: art.museum_name };
+    if (art.museum_url) data.isPartOf.url = art.museum_url;
+  }
+  const json = JSON.stringify(data).replace(/</g, "\\u003c");
+  return `<script type="application/ld+json">${json}</script>`;
 }
 
 function renderAbout(about) {
@@ -544,6 +591,9 @@ h1,h2{margin:0}
 .meta__cell{display:flex;flex-direction:column;gap:6px}
 .meta__label{font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--t-label)}
 .meta__val{font-size:15px;color:var(--t-body)}
+.meta__link{color:var(--gold);text-decoration:none;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.meta__link:hover{text-decoration:underline}
+.meta__ext{flex:none;opacity:.85;position:relative;top:.5px}
 
 /* Pull quote */
 .band{padding:0 var(--pad)}
