@@ -121,8 +121,22 @@ export async function onRequestGet(context) {
 
   if (!data || !data.artwork) return html(renderNotFound(), 404, 60);
 
+  // Canonicalize to the pretty slug URL (T1-832): a UUID request 301-redirects
+  // to /a/{slug}, so the UUID and slug versions don't compete as duplicates in
+  // search. Mirrors the artist handler.
+  const canonical = data.artwork.slug;
+  if (canonical && canonical !== slug) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        location: `https://artwhisper.app/a/${encodeURIComponent(canonical)}`,
+        "cache-control": "public, max-age=300, s-maxage=86400",
+      },
+    });
+  }
+
   // Success — cache at the edge for an hour; the underlying artwork is stable.
-  return html(renderPage(data, slug, context.request.url), 200, 3600);
+  return html(renderPage(data, canonical || slug, context.request.url), 200, 3600);
 }
 
 /** Wrap an HTML string in a Response with sane caching + security headers. */
