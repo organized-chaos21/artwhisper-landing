@@ -75,10 +75,25 @@ export async function onRequestGet(context) {
 
   if (!data || !data.movement) return html(renderNotFound(), 404, 60);
 
+  // Canonicalize to the pretty slug URL (T1-832): a UUID request (or a stale
+  // alias) 301-redirects to /movement/{slug}, so the UUID and slug versions
+  // don't compete as duplicates. Mirrors the artist handler; the movements API
+  // returns the canonical `movement.slug` (its `meta` is empty).
+  const canonical = data.movement.slug;
+  if (canonical && canonical !== slug) {
+    return new Response(null, {
+      status: 301,
+      headers: {
+        location: `https://artwhisper.app/movement/${encodeURIComponent(canonical)}`,
+        "cache-control": "public, max-age=300, s-maxage=86400",
+      },
+    });
+  }
+
   // Related + prev/next movements carry their featured-artwork `image_url`
   // straight from GET /v1/movements/:slug, so the cards render thumbnails
   // without any per-movement edge fetch.
-  return html(renderPage(data, slug), 200, 3600);
+  return html(renderPage(data, canonical || slug), 200, 3600);
 }
 
 function html(body, status, maxAge) {
