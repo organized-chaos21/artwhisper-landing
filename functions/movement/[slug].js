@@ -216,9 +216,12 @@ function renderPage(data, slug) {
       <img class="nav__logo" src="/logo.png" alt="Art Whisper" width="30" height="30" />
       <span>Art Whisper</span>
     </a>
-    <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener">
-      <span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}
-    </a>
+    <div class="nav__right">
+      <a class="nav__link" href="/movements">All movements</a>
+      <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener">
+        <span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}
+      </a>
+    </div>
   </header>
 
   ${heroHtml}
@@ -656,6 +659,8 @@ h1,h2{margin:0}
 .nav__logo{border-radius:50%;display:block}
 .nav__brand span{color:var(--t-primary);font-weight:600;font-size:15px}
 .nav__open{display:inline-flex;align-items:center;gap:6px;color:var(--gold);font-size:14px;font-weight:500}
+.nav__right{display:flex;align-items:center;gap:22px}
+.nav__link{color:var(--t-secondary);font-size:14px;font-weight:500}.nav__link:hover{color:var(--gold)}
 .nav__open-sm{display:none}
 
 /* Hero gallery */
