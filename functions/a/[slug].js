@@ -399,6 +399,12 @@ function renderAbout(about) {
 
 function renderMovements(tags) {
   if (!Array.isArray(tags) || !tags.length) return "";
+  // Gold right-chevron — mirrors the mobile app's movement chip, signalling the
+  // pill is tappable/clickable. Shown only on linked chips.
+  const chev =
+    `<svg class="pill__chev" width="14" height="14" viewBox="0 0 24 24" fill="none" ` +
+    `stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ` +
+    `aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`;
   const pills = tags
     .filter((t) => t?.name)
     .map((t) => {
@@ -407,7 +413,7 @@ function renderMovements(tags) {
       // a plain pill if a tag somehow lacks a well-formed slug.
       const slug = typeof t.slug === "string" && SLUG_RE.test(t.slug) ? t.slug : null;
       return slug
-        ? `<a class="pill" href="/movement/${slug}">${esc(t.name)}</a>`
+        ? `<a class="pill" href="/movement/${slug}">${esc(t.name)}${chev}</a>`
         : `<span class="pill">${esc(t.name)}</span>`;
     })
     .join("");
@@ -646,10 +652,11 @@ h1,h2{margin:0}
 .movements{padding:0 var(--pad) 48px;background:var(--bg)}
 .movements .eyebrow{margin-bottom:16px}
 .pills{display:flex;flex-wrap:wrap;gap:10px}
-.pill{display:inline-block;padding:8px 18px;border:1px solid var(--border);border-radius:20px;
-  color:var(--gold);font-size:14px;font-weight:500;background:var(--surface);text-decoration:none}
-a.pill{transition:border-color .15s ease,background .15s ease}
-a.pill:hover{border-color:var(--gold);background:var(--bg)}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:8px 16px;border-radius:16px;
+  color:var(--t-primary);font-size:14px;font-weight:500;background:#F0EDE8;text-decoration:none}
+.pill__chev{color:var(--gold);flex-shrink:0}
+a.pill{transition:background .15s ease}
+a.pill:hover{background:#E8E2D8}
 
 /* What to Notice */
 .notice{padding:8px var(--pad) 56px;background:var(--bg)}
