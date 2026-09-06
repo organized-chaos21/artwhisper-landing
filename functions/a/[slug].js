@@ -401,7 +401,15 @@ function renderMovements(tags) {
   if (!Array.isArray(tags) || !tags.length) return "";
   const pills = tags
     .filter((t) => t?.name)
-    .map((t) => `<span class="pill">${esc(t.name)}</span>`)
+    .map((t) => {
+      // Link the chip to the public movement page when we have a valid slug
+      // (interlinks share pages into the /movement/{slug} SEO hub). Fall back to
+      // a plain pill if a tag somehow lacks a well-formed slug.
+      const slug = typeof t.slug === "string" && SLUG_RE.test(t.slug) ? t.slug : null;
+      return slug
+        ? `<a class="pill" href="/movement/${slug}">${esc(t.name)}</a>`
+        : `<span class="pill">${esc(t.name)}</span>`;
+    })
     .join("");
   if (!pills) return "";
   return `<section class="movements">
@@ -638,8 +646,10 @@ h1,h2{margin:0}
 .movements{padding:0 var(--pad) 48px;background:var(--bg)}
 .movements .eyebrow{margin-bottom:16px}
 .pills{display:flex;flex-wrap:wrap;gap:10px}
-.pill{padding:8px 18px;border:1px solid var(--border);border-radius:20px;
-  color:var(--gold);font-size:14px;font-weight:500;background:var(--surface)}
+.pill{display:inline-block;padding:8px 18px;border:1px solid var(--border);border-radius:20px;
+  color:var(--gold);font-size:14px;font-weight:500;background:var(--surface);text-decoration:none}
+a.pill{transition:border-color .15s ease,background .15s ease}
+a.pill:hover{border-color:var(--gold);background:var(--bg)}
 
 /* What to Notice */
 .notice{padding:8px var(--pad) 56px;background:var(--bg)}
