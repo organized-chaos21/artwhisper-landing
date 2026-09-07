@@ -176,6 +176,10 @@ function renderPage(data, slug, reqUrl) {
 
   const title = art.title || "Untitled";
   const artistName = artist?.name || null;
+  // Public artist page slug, when the artist has one — lets the hero byline and
+  // the artist card link into the /artist/{slug} SEO hub (internal linking).
+  const artistSlug =
+    artist && typeof artist.slug === "string" && SLUG_RE.test(artist.slug) ? artist.slug : null;
   const year = art.year || null;
 
   // Subtitle: "Vincent van Gogh, 1889" — omit missing parts gracefully.
@@ -269,7 +273,11 @@ function renderPage(data, slug, reqUrl) {
   <section class="hero"${heroCss ? ` style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.28) 44%,rgba(0,0,0,.68) 72%,rgba(0,0,0,.94) 100%),url('${heroCss}')"` : ""}>
     <div class="hero__title">
       <h1>${esc(title)}</h1>
-      ${subtitle ? `<p>${esc(subtitle)}</p>` : ""}
+      ${subtitle ? `<p>${
+        artistName && artistSlug
+          ? `<a class="hero__artist" href="/artist/${artistSlug}">${esc(artistName)}</a>${year ? `, ${esc(String(year))}` : ""}`
+          : esc(subtitle)
+      }</p>` : ""}
     </div>
   </section>
 
@@ -481,16 +489,23 @@ function renderArtist(artist, playUrl) {
   const portrait = portraitCss
     ? `<span class="artist__portrait" style="background-image:url('${portraitCss}')"></span>`
     : `<span class="artist__portrait artist__portrait--initials">${esc(initials)}</span>`;
-  return `<section class="artist">
-    <span class="eyebrow eyebrow--muted">THE ARTIST</span>
-    <div class="artist__card">
-      <div class="artist__row">
-        ${portrait}
+  // When the artist has a public page, make the identity row a link into
+  // /artist/{slug} with a trailing chevron (mirrors the mobile app's tappable
+  // artist row) — the artwork→artist internal link. Falls back to a plain row.
+  const slug =
+    typeof artist.slug === "string" && SLUG_RE.test(artist.slug) ? artist.slug : null;
+  const rowInner = `${portrait}
         <div class="artist__id">
           <strong>${esc(name)}</strong>
           ${line ? `<span>${esc(line)}</span>` : ""}
-        </div>
-      </div>
+        </div>${slug ? ARTIST_CHEV : ""}`;
+  const row = slug
+    ? `<a class="artist__row artist__row--link" href="/artist/${slug}">${rowInner}</a>`
+    : `<div class="artist__row">${rowInner}</div>`;
+  return `<section class="artist">
+    <span class="eyebrow eyebrow--muted">THE ARTIST</span>
+    <div class="artist__card">
+      ${row}
       ${bio ? `<p class="artist__bio">${esc(bio)}</p>` : ""}
       <a class="linkcta" href="${playUrl}" target="_blank" rel="noopener">Read ${esc(firstName)}'s full story in Art Whisper ${ARROW}</a>
     </div>
@@ -527,6 +542,9 @@ function renderNotFound() {
 
 // ─── Inline SVG snippets ────────────────────────────────────────────
 const ARROW = `<svg class="arr" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`;
+// Right-chevron for the tappable artist row — heavier stroke than the movement
+// pill chevron so it reads clearly as "this row navigates" (design sign-off).
+const ARTIST_CHEV = `<svg class="artist__chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>`;
 const LOCK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 const LOCK_SM = `<svg class="audio__lock" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 const HEADPHONES = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>`;
@@ -612,6 +630,9 @@ h1,h2{margin:0}
   text-shadow:0 2px 24px rgba(0,0,0,.85)}
 .hero__title p{margin:12px 0 0;color:rgba(255,255,255,.9);font-size:20px;letter-spacing:.5px;
   text-shadow:0 1px 16px rgba(0,0,0,.7)}
+.hero__artist{color:inherit;text-decoration:underline;text-underline-offset:3px;
+  text-decoration-thickness:1px;text-decoration-color:rgba(255,255,255,.55)}
+.hero__artist:hover{text-decoration-color:#fff}
 
 /* Metadata bar */
 .meta{display:flex;flex-wrap:wrap;gap:48px;padding:32px var(--pad);
@@ -695,6 +716,10 @@ a.pill:hover{background:#E8E2D8}
 .artist__card{max-width:520px;background:var(--band-light);border:1px solid var(--border);
   border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:14px}
 .artist__row{display:flex;align-items:center;gap:14px}
+.artist__row--link{text-decoration:none;color:inherit}
+.artist__chev{color:var(--t-secondary);margin-left:auto;flex:none;transition:color .15s ease}
+.artist__row--link:hover .artist__id strong{color:var(--gold)}
+.artist__row--link:hover .artist__chev{color:var(--gold)}
 .artist__portrait{width:52px;height:52px;border-radius:26px;flex:none;
   background:#E8E4DF center/cover no-repeat;display:flex;align-items:center;justify-content:center}
 .artist__portrait--initials{color:var(--t-secondary);font-weight:600;font-size:16px}
