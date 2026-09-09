@@ -211,6 +211,9 @@ function renderPage(data, slug, reqUrl) {
   // ── Sections ──
   const metaBar = renderMetaBar(art);
   const structuredData = renderStructuredData(art, artist, pageUrl, heroImg);
+  // Header breadcrumb (T1-845): Home › Artist › Artwork. Home → the landing site;
+  // Artist → /artist/{slug} when it has one; the artwork title is the current page.
+  const breadcrumb = renderBreadcrumb(title, artistName, artistSlug, pageUrl);
   const pullQuote = art.quick_context
     ? `<section class="band quote">
          <span class="quote__rule"></span>
@@ -234,6 +237,7 @@ function renderPage(data, slug, reqUrl) {
   <meta name="description" content="${esc(ogDesc)}" />
   <link rel="canonical" href="${pageUrl}" />
   ${structuredData}
+  ${breadcrumb.jsonLd}
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
@@ -269,6 +273,8 @@ function renderPage(data, slug, reqUrl) {
       <span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}
     </a>
   </header>
+
+  ${breadcrumb.nav}
 
   <section class="hero"${heroCss ? ` style="background-image:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.28) 44%,rgba(0,0,0,.68) 72%,rgba(0,0,0,.94) 100%),url('${heroCss}')"` : ""}>
     <div class="hero__title">
@@ -339,6 +345,41 @@ function withUtm(url) {
 
 // Small diagonal "opens in a new tab" glyph for the outbound museum link.
 const EXT_ARROW = `<svg class="meta__ext" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>`;
+
+// Header breadcrumb + BreadcrumbList JSON-LD (T1-845). Trail: Home › Artist › Artwork
+// — Home links to the landing site, Artist to /artist/{slug} (when it has one), and
+// the artwork title is the current page (not a link). Movement stays as the metadata
+// chip; artist + movement are parallel, so only the artist is the breadcrumb parent.
+function renderBreadcrumb(title, artistName, artistSlug, pageUrl) {
+  const SITE = "https://artwhisper.app";
+  const items = [{ name: "Home", url: SITE }];
+  if (artistName && artistSlug) items.push({ name: artistName, url: `${SITE}/artist/${artistSlug}` });
+  items.push({ name: title, url: null });
+
+  const sep = `<span class="crumbs__sep" aria-hidden="true">›</span>`;
+  const nav =
+    `<nav class="crumbs" aria-label="Breadcrumb">` +
+    items
+      .map((it, i) =>
+        i === items.length - 1
+          ? `<span class="crumbs__current" aria-current="page">${esc(it.name)}</span>`
+          : `<a href="${esc(it.url)}">${esc(it.name)}</a>`,
+      )
+      .join(sep) +
+    `</nav>`;
+
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => {
+      const el = { "@type": "ListItem", position: i + 1, name: it.name };
+      if (it.url) el.item = it.url; // the current page (last) omits item per Google guidance
+      return el;
+    }),
+  };
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
+  return { nav, jsonLd };
+}
 
 // The meta bar carries the "object label" facts, each shown only when present — coverage
 // varies a lot by source, so a blank label is never rendered (T1-730). The museum name
@@ -621,6 +662,14 @@ h1,h2{margin:0}
 .nav__open{display:inline-flex;align-items:center;gap:6px;color:var(--gold);
   font-size:14px;font-weight:500;text-decoration:none}
 .nav__open-sm{display:none}
+
+/* Breadcrumb (T1-845) — sits in the header, just below the nav */
+.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:11px var(--pad);
+  background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;color:var(--t-secondary)}
+.crumbs a{color:var(--gold);text-decoration:none}
+.crumbs a:hover{text-decoration:underline}
+.crumbs__sep{color:var(--border)}
+.crumbs__current{color:var(--t-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
 
 /* Hero */
 .hero{position:relative;height:min(700px,72vh);background:#141428 center/cover no-repeat;
