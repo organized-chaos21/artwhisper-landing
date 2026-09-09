@@ -124,6 +124,33 @@ const CLOSE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" strok
 // Prefer the large derivative for full-screen viewing; falls back gracefully.
 const lgUrl = (u) => (u ? String(u).replace(/_sm\.(jpe?g|png|webp)(\?|$)/i, "_lg.$1$2") : u);
 
+// Header breadcrumb + BreadcrumbList JSON-LD (T1-845). Pass items as
+// [{name, url}] with the last (current page) omitting url.
+function renderBreadcrumb(items) {
+  const sep = `<span class="crumbs__sep" aria-hidden="true">›</span>`;
+  const nav =
+    `<nav class="crumbs" aria-label="Breadcrumb">` +
+    items
+      .map((it, i) =>
+        i === items.length - 1
+          ? `<span class="crumbs__current" aria-current="page">${esc(it.name)}</span>`
+          : `<a href="${esc(it.url)}">${esc(it.name)}</a>`,
+      )
+      .join(sep) +
+    `</nav>`;
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => {
+      const el = { "@type": "ListItem", position: i + 1, name: it.name };
+      if (it.url) el.item = it.url;
+      return el;
+    }),
+  };
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
+  return { nav, jsonLd };
+}
+
 // ─── page ───────────────────────────────────────────────────────────
 function renderPage(data, slug) {
   const m = data.movement || {};
@@ -134,6 +161,13 @@ function renderPage(data, slug) {
   const after = data.after_movement || null;
 
   const name = m.name || "Art Movement";
+  // Breadcrumb (T1-845): Home › Movements › {Movement}. The /movements hub exists,
+  // so it's a real 3-level parent trail.
+  const breadcrumb = renderBreadcrumb([
+    { name: "Home", url: "https://artwhisper.app" },
+    { name: "Movements", url: "https://artwhisper.app/movements" },
+    { name },
+  ]);
   const period = m.time_period || "";
   const origin = m.origin_location || "";
   const subtitle = [period, origin].filter(Boolean).join(" · ");
@@ -202,6 +236,7 @@ function renderPage(data, slug) {
   <meta name="twitter:description" content="${esc(metaDesc)}" />
   ${ogImg ? `<meta name="twitter:image" content="${esc(ogImg)}" />` : ""}
   ${renderSchema(name, metaDesc, pageUrl, ogImg, period)}
+  ${breadcrumb.jsonLd}
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="alternate icon" href="/favicon.ico" type="image/png" />
   <link rel="apple-touch-icon" href="/favicon.ico" />
@@ -223,6 +258,8 @@ function renderPage(data, slug) {
       </a>
     </div>
   </header>
+
+  ${breadcrumb.nav}
 
   ${heroHtml}
   ${overviewHtml}
@@ -662,6 +699,10 @@ h1,h2{margin:0}
 .nav__right{display:flex;align-items:center;gap:22px}
 .nav__link{color:var(--t-secondary);font-size:14px;font-weight:500}.nav__link:hover{color:var(--gold)}
 .nav__open-sm{display:none}
+.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:11px var(--pad);background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;color:var(--t-secondary)}
+.crumbs a{color:var(--gold);text-decoration:none}.crumbs a:hover{text-decoration:underline}
+.crumbs__sep{color:var(--border)}
+.crumbs__current{color:var(--t-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
 
 /* Hero gallery */
 .hero{position:relative;height:min(560px,64vh);overflow:hidden;background:#141428}

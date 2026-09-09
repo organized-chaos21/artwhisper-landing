@@ -74,6 +74,33 @@ const LOCK = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke
 const EXPAND = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
 const CLOSE = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
 
+// Header breadcrumb + BreadcrumbList JSON-LD (T1-845). Pass items as
+// [{name, url}] with the last (current page) omitting url.
+function renderBreadcrumb(items) {
+  const sep = `<span class="crumbs__sep" aria-hidden="true">›</span>`;
+  const nav =
+    `<nav class="crumbs" aria-label="Breadcrumb">` +
+    items
+      .map((it, i) =>
+        i === items.length - 1
+          ? `<span class="crumbs__current" aria-current="page">${esc(it.name)}</span>`
+          : `<a href="${esc(it.url)}">${esc(it.name)}</a>`,
+      )
+      .join(sep) +
+    `</nav>`;
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((it, i) => {
+      const el = { "@type": "ListItem", position: i + 1, name: it.name };
+      if (it.url) el.item = it.url;
+      return el;
+    }),
+  };
+  const jsonLd = `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
+  return { nav, jsonLd };
+}
+
 function renderPage(data, id) {
   const a = data.artist || {};
   const name = a.name || "Artist";
@@ -93,6 +120,12 @@ function renderPage(data, id) {
 
   const pageUrl = `https://artwhisper.app/artist/${esc(id)}`;
   const metaDesc = clip(oneLiner || bio || `${name}${line ? " (" + line + ")" : ""} — biography, notable works, and influences.`, 180);
+  // Breadcrumb (T1-845): Home › {Artist}. Two levels — there is no /artists hub
+  // to sit in between, so the artist is a direct child of Home.
+  const breadcrumb = renderBreadcrumb([
+    { name: "Home", url: "https://artwhisper.app" },
+    { name },
+  ]);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -110,6 +143,7 @@ function renderPage(data, id) {
   <meta property="og:url" content="${pageUrl}" />
   <meta name="twitter:card" content="summary" />
   ${schema(a, name, metaDesc, pageUrl, portrait)}
+  ${breadcrumb.jsonLd}
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="alternate icon" href="/favicon.ico" type="image/png" />
   <link rel="apple-touch-icon" href="/favicon.ico" />
@@ -121,6 +155,8 @@ function renderPage(data, id) {
     <a class="nav__brand" href="https://artwhisper.app"><img class="nav__logo" src="/logo.png" alt="Art Whisper" width="30" height="30" /><span>Art Whisper</span></a>
     <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener"><span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}</a>
   </header>
+
+  ${breadcrumb.nav}
 
   <section class="ahero">
     ${pc ? `<button class="ahero__picwrap" type="button" aria-label="View full portrait" data-full="${esc(pc)}" data-title="${esc(name)}" data-by="${esc(line)}"><span class="ahero__pic" style="background-image:url('${pc}')"></span><span class="ahero__zoom">${EXPAND}</span></button>` : `<span class="ahero__pic ahero__pic--ph">${esc(initials)}</span>`}
@@ -274,6 +310,10 @@ img{max-width:100%;display:block}a{color:inherit;text-decoration:none}h1,h2{marg
 .nav{display:flex;align-items:center;justify-content:space-between;height:56px;padding:0 var(--pad);background:var(--surface);border-bottom:1px solid var(--border)}
 .nav__brand{display:flex;align-items:center;gap:10px;color:var(--t-secondary);font-size:14px}.nav__logo{border-radius:50%;display:block}.nav__brand span{color:var(--t-primary);font-weight:600;font-size:15px}
 .nav__open{display:inline-flex;align-items:center;gap:6px;color:var(--gold);font-size:14px;font-weight:500}.nav__open-sm{display:none}
+.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:11px var(--pad);background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;color:var(--t-secondary)}
+.crumbs a{color:var(--gold);text-decoration:none}.crumbs a:hover{text-decoration:underline}
+.crumbs__sep{color:var(--border)}
+.crumbs__current{color:var(--t-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
 /* artist hero */
 .ahero{display:flex;align-items:center;gap:32px;padding:52px var(--pad);background:var(--band-light);border-bottom:1px solid var(--border)}
 .ahero__pic{width:132px;height:132px;border-radius:50%;flex:none;background:#E8E4DF center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--t-secondary);font-weight:600;font-size:40px;box-shadow:0 4px 18px rgba(26,20,13,.12)}
