@@ -195,6 +195,12 @@ function renderPage(data, slug, reqUrl) {
     null;
   const heroCss = cssUrl(heroImg);
 
+  // A hero-less page is a thin, image-free page: it hurts SEO and looks broken
+  // when opened directly (usually a raw-UUID hit from a crawler or a stale link,
+  // since the sitemap already gates these out). Keep it out of the search index
+  // until the image sweep fills a hero, at which point it re-enters naturally.
+  const noindex = !heroImg;
+
   // OG image is the Phase 1 share card (1200×630), keyed by artwork id.
   const shareCard = `${API_BASE}/v1/artworks/${art.id}/share-card.png`;
   const pageUrl = `https://artwhisper.app/a/${esc(slug)}`;
@@ -235,6 +241,7 @@ function renderPage(data, slug, reqUrl) {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${esc(ogTitle)} · Art Whisper</title>
   <meta name="description" content="${esc(ogDesc)}" />
+  ${noindex ? '<meta name="robots" content="noindex, follow" />' : ""}
   <link rel="canonical" href="${pageUrl}" />
   ${structuredData}
   ${breadcrumb.jsonLd}
