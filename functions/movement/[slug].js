@@ -13,6 +13,34 @@ const APP_STORE_URL =
   "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=movement-web";
 const FETCH_TIMEOUT_MS = 5000;
 
+// Build the install links carrying the deferred deep-link destination (this movement
+// page, `dl_type`+`dl_slug`, T1-877) so a web→install opens back here, plus any inbound
+// campaign UTM (they coexist). `dest` = { type, slug }. iOS deferred = T1-878.
+function buildStoreLinks(src, dest) {
+  const source = src && /^[a-z0-9_-]{1,40}$/i.test(src) ? src.toLowerCase() : null;
+  const destSlug =
+    dest && dest.slug && /^[a-z0-9-]{1,140}$/i.test(dest.slug) ? dest.slug : null;
+  const ref = new URLSearchParams();
+  if (dest && dest.type && destSlug) {
+    ref.set("dl_type", dest.type);
+    ref.set("dl_slug", destSlug);
+  }
+  if (source) {
+    ref.set("utm_source", source);
+    ref.set("utm_medium", "web");
+    ref.set("utm_campaign", source);
+  }
+  const referrer = ref.toString();
+  return {
+    play: referrer
+      ? "https://play.google.com/store/apps/details?id=app.artwhisper&referrer=" + encodeURIComponent(referrer)
+      : PLAY_URL,
+    appstore: source
+      ? "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=" + encodeURIComponent(source.slice(0, 40))
+      : APP_STORE_URL,
+  };
+}
+
 // PostHog (public client key — safe to embed; same project as the app).
 const POSTHOG_KEY = "phc_d9QDyua38ePkoqG4KtR2Wa9XUasTPuvfVMJBJInE7eS";
 const POSTHOG_HOST = "https://us.i.posthog.com";
@@ -93,7 +121,7 @@ export async function onRequestGet(context) {
   // Related + prev/next movements carry their featured-artwork `image_url`
   // straight from GET /v1/movements/:slug, so the cards render thumbnails
   // without any per-movement edge fetch.
-  return html(renderPage(data, canonical || slug), 200, 3600);
+  return html(renderPage(data, canonical || slug, context.request.url), 200, 3600);
 }
 
 function html(body, status, maxAge) {
@@ -152,7 +180,20 @@ function renderBreadcrumb(items) {
 }
 
 // ─── page ───────────────────────────────────────────────────────────
-function renderPage(data, slug) {
+function renderPage(data, slug, reqUrl) {
+  // Install links carry the deferred deep-link destination (this movement page) plus
+  // any inbound campaign UTM, so a web→install lands back here after install (T1-877).
+  let inParams;
+  try {
+    inParams = new URL(reqUrl).searchParams;
+  } catch {
+    inParams = new URLSearchParams();
+  }
+  const { play: PLAY_LINK, appstore: APP_STORE_LINK } = buildStoreLinks(
+    inParams.get("utm_source"),
+    { type: "movement", slug },
+  );
+
   const m = data.movement || {};
   const artists = Array.isArray(data.key_artists) ? data.key_artists : [];
   const works = Array.isArray(data.notable_works) ? data.notable_works : [];
@@ -253,7 +294,7 @@ function renderPage(data, slug) {
     </a>
     <div class="nav__right">
       <a class="nav__link" href="/movements">All movements</a>
-      <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener">
+      <a class="nav__open" href="${PLAY_LINK}" target="_blank" rel="noopener">
         <span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}
       </a>
     </div>
@@ -270,8 +311,8 @@ function renderPage(data, slug) {
       <span>Explore this movement in depth in Art Whisper</span>
     </div>
     <div class="badges">
-      <a class="badge" href="${PLAY_URL}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play"><img src="/badges/google-play.svg" alt="Get it on Google Play" height="44" /></a>
-      <a class="badge" href="${APP_STORE_URL}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store"><img src="/badges/app-store.svg" alt="Download on the App Store" height="44" /></a>
+      <a class="badge" href="${PLAY_LINK}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play"><img src="/badges/google-play.svg" alt="Get it on Google Play" height="44" /></a>
+      <a class="badge" href="${APP_STORE_LINK}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store"><img src="/badges/app-store.svg" alt="Download on the App Store" height="44" /></a>
     </div>
   </section>
 
@@ -293,7 +334,7 @@ function renderPage(data, slug) {
 
   <footer class="foot"><span>© ${new Date().getFullYear()} Bright Star. All rights reserved.</span></footer>
 
-  <a class="stickybar" href="${PLAY_URL}" target="_blank" rel="noopener">
+  <a class="stickybar" href="${PLAY_LINK}" target="_blank" rel="noopener">
     <span class="stickybar__left"><img class="stickybar__logo" src="/logo.png" alt="" width="32" height="32" /><strong>Open the App</strong></span>
     ${ARROW}
   </a>
