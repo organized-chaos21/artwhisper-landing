@@ -10,6 +10,35 @@ const PLAY_URL =
   "https://play.google.com/store/apps/details?id=app.artwhisper&utm_source=artist&utm_medium=web&utm_campaign=artist_page";
 const APP_STORE_URL =
   "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=artist-web";
+
+// Build the Play/App Store install links carrying the deferred deep-link destination
+// (`dl_type` + `dl_slug`, T1-877) so the app opens this same artist page after install,
+// plus any inbound campaign UTM (they coexist in one referrer). `dest` = { type, slug }.
+// iOS deferred deep linking is out of scope (T1-878); the App Store link stays coarse.
+function buildStoreLinks(src, dest) {
+  const source = src && /^[a-z0-9_-]{1,40}$/i.test(src) ? src.toLowerCase() : null;
+  const destSlug =
+    dest && dest.slug && /^[a-z0-9-]{1,140}$/i.test(dest.slug) ? dest.slug : null;
+  const ref = new URLSearchParams();
+  if (dest && dest.type && destSlug) {
+    ref.set("dl_type", dest.type);
+    ref.set("dl_slug", destSlug);
+  }
+  if (source) {
+    ref.set("utm_source", source);
+    ref.set("utm_medium", "web");
+    ref.set("utm_campaign", source);
+  }
+  const referrer = ref.toString();
+  return {
+    play: referrer
+      ? "https://play.google.com/store/apps/details?id=app.artwhisper&referrer=" + encodeURIComponent(referrer)
+      : PLAY_URL,
+    appstore: source
+      ? "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=" + encodeURIComponent(source.slice(0, 40))
+      : APP_STORE_URL,
+  };
+}
 const FETCH_TIMEOUT_MS = 5000;
 const POSTHOG_KEY = "phc_d9QDyua38ePkoqG4KtR2Wa9XUasTPuvfVMJBJInE7eS";
 const POSTHOG_HOST = "https://us.i.posthog.com";
@@ -60,7 +89,7 @@ export async function onRequestGet(context) {
     });
   }
 
-  return html(renderPage(data, canonical || id), 200, 3600);
+  return html(renderPage(data, canonical || id, context.request.url), 200, 3600);
 }
 
 function html(body, status, maxAge) {
@@ -101,9 +130,22 @@ function renderBreadcrumb(items) {
   return { nav, jsonLd };
 }
 
-function renderPage(data, id) {
+function renderPage(data, id, reqUrl) {
   const a = data.artist || {};
   const name = a.name || "Artist";
+
+  // Install links carry the deferred deep-link destination (this artist page) plus
+  // any inbound campaign UTM, so a web→install lands back here after install (T1-877).
+  let inParams;
+  try {
+    inParams = new URL(reqUrl).searchParams;
+  } catch {
+    inParams = new URLSearchParams();
+  }
+  const { play: PLAY_LINK, appstore: APP_STORE_LINK } = buildStoreLinks(
+    inParams.get("utm_source"),
+    { type: "artist", slug: id },
+  );
   const first = String(name).split(/\s+/)[0];
   const dates = [a.birth_year, a.death_year].filter(Boolean).join("–");
   const line = [dates, a.nationality].filter(Boolean).join(" · ");
@@ -153,7 +195,7 @@ function renderPage(data, id) {
 <body>
   <header class="nav">
     <a class="nav__brand" href="https://artwhisper.app"><img class="nav__logo" src="/logo.png" alt="Art Whisper" width="30" height="30" /><span>Art Whisper</span></a>
-    <a class="nav__open" href="${PLAY_URL}" target="_blank" rel="noopener"><span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}</a>
+    <a class="nav__open" href="${PLAY_LINK}" target="_blank" rel="noopener"><span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}</a>
   </header>
 
   ${breadcrumb.nav}
@@ -173,23 +215,23 @@ function renderPage(data, id) {
   ${bio ? `<section class="sec bio">
     <span class="eyebrow eyebrow--muted">ABOUT</span>
     <p>${esc(bio)}</p>
-    <a class="gatecta" href="${PLAY_URL}" target="_blank" rel="noopener">${LOCK}<span>Read ${esc(first)}'s full story in Art Whisper</span> ${ARROW}</a>
+    <a class="gatecta" href="${PLAY_LINK}" target="_blank" rel="noopener">${LOCK}<span>Read ${esc(first)}'s full story in Art Whisper</span> ${ARROW}</a>
   </section>` : ""}
 
-  ${renderWorks(works, first)}
+  ${renderWorks(works, first, PLAY_LINK)}
   ${renderInfluences(infBy, infd)}
 
   <section class="band cta">
     <div class="cta__left"><img class="cta__mark" src="/logo.png" alt="" width="26" height="26" /><span>Explore ${esc(first)} and thousands of artists in Art Whisper</span></div>
     <div class="badges">
-      <a class="badge" href="${PLAY_URL}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play"><img src="/badges/google-play.svg" alt="Get it on Google Play" height="44" /></a>
-      <a class="badge" href="${APP_STORE_URL}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store"><img src="/badges/app-store.svg" alt="Download on the App Store" height="44" /></a>
+      <a class="badge" href="${PLAY_LINK}" target="_blank" rel="noopener" aria-label="Get Art Whisper on Google Play"><img src="/badges/google-play.svg" alt="Get it on Google Play" height="44" /></a>
+      <a class="badge" href="${APP_STORE_LINK}" target="_blank" rel="noopener" aria-label="Download Art Whisper on the App Store"><img src="/badges/app-store.svg" alt="Download on the App Store" height="44" /></a>
     </div>
   </section>
 
   <footer class="foot"><span>© ${new Date().getFullYear()} Bright Star. All rights reserved.</span></footer>
 
-  <a class="stickybar" href="${PLAY_URL}" target="_blank" rel="noopener">
+  <a class="stickybar" href="${PLAY_LINK}" target="_blank" rel="noopener">
     <span class="stickybar__left"><img class="stickybar__logo" src="/logo.png" alt="" width="32" height="32" /><strong>Open the App</strong></span>${ARROW}
   </a>
 
@@ -211,7 +253,7 @@ function renderPage(data, id) {
 </html>`;
 }
 
-function renderWorks(works, first) {
+function renderWorks(works, first, playUrl) {
   if (!works.length) return "";
   const shown = works.slice(0, 6);
   const remaining = works.length - shown.length;
@@ -225,7 +267,7 @@ function renderWorks(works, first) {
     </a>`;
   }).join("");
   const gate = remaining > 0
-    ? `<a class="gatecta" href="${PLAY_URL}" target="_blank" rel="noopener">${LOCK}<span>See all of ${esc(first)}'s works in Art Whisper</span> ${ARROW}</a>`
+    ? `<a class="gatecta" href="${playUrl}" target="_blank" rel="noopener">${LOCK}<span>See all of ${esc(first)}'s works in Art Whisper</span> ${ARROW}</a>`
     : "";
   return `<section class="sec works"><span class="eyebrow eyebrow--muted">NOTABLE WORKS</span><div class="wgrid">${cards}</div>${gate}</section>`;
 }

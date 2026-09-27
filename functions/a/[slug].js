@@ -26,26 +26,45 @@ const FETCH_TIMEOUT_MS = 5000;
 const POSTHOG_KEY = "phc_d9QDyua38ePkoqG4KtR2Wa9XUasTPuvfVMJBJInE7eS";
 const POSTHOG_HOST = "https://us.i.posthog.com";
 
-// Build the store-install links, carrying inbound attribution through to the app.
-// - Android: Google Play reads the `referrer` param via the Install Referrer API,
-//   so we pass utm_source + the pin's slug (utm_content) for per-pin attribution.
-// - iOS: Apple only exposes a campaign-level token (`ct`), never per-pin, so we set
-//   ct to the source (e.g. "pinterest") for a coarse App Store Connect campaign count.
-// Falls back to the original share-page tags when there's no inbound utm_source.
-function buildStoreLinks(src, content) {
+// Build the store-install links, carrying BOTH the deferred deep-link destination
+// and inbound campaign attribution through to the app.
+// - Android: Google Play reads the `referrer` param via the Install Referrer API.
+//   We always encode the destination (`dl_type` + `dl_slug`, T1-877) so the app can
+//   open this same page after install, and — when present — the campaign UTM tags
+//   (utm_source + the pin's slug as utm_content, T1-830) for per-pin attribution.
+//   The two coexist in one referrer string.
+// - iOS: Apple only exposes a campaign-level token (`ct`), never a per-page deferred
+//   link, so we set ct to the source (e.g. "pinterest"); iOS deferred = T1-878.
+// `dest` is the deep-link destination { type, slug }; omit it to build a plain link.
+function buildStoreLinks(src, content, dest) {
   const source = src && /^[a-z0-9_-]{1,40}$/i.test(src) ? src.toLowerCase() : null;
   const slug = content && /^[a-z0-9-]{1,140}$/i.test(content) ? content : null;
-  if (!source) {
-    return {
-      play: "https://play.google.com/store/apps/details?id=app.artwhisper&utm_source=share&utm_medium=web_preview&utm_campaign=share_page",
-      appstore: "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=share-web_preview",
-    };
+  const destSlug =
+    dest && dest.slug && /^[a-z0-9-]{1,140}$/i.test(dest.slug) ? dest.slug : null;
+
+  const ref = new URLSearchParams();
+  // Deferred deep-link destination — carried on every install link, independent of
+  // any campaign attribution, so an organic web→install still opens the same page.
+  if (dest && dest.type && destSlug) {
+    ref.set("dl_type", dest.type);
+    ref.set("dl_slug", destSlug);
   }
-  const ref = new URLSearchParams({ utm_source: source, utm_medium: "web", utm_campaign: source });
-  if (slug) ref.set("utm_content", slug);
+  // Campaign attribution — added only for a real inbound source.
+  if (source) {
+    ref.set("utm_source", source);
+    ref.set("utm_medium", "web");
+    ref.set("utm_campaign", source);
+    if (slug) ref.set("utm_content", slug);
+  }
+
+  const referrer = ref.toString();
   return {
-    play: "https://play.google.com/store/apps/details?id=app.artwhisper&referrer=" + encodeURIComponent(ref.toString()),
-    appstore: "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=" + encodeURIComponent(source.slice(0, 40)),
+    play: referrer
+      ? "https://play.google.com/store/apps/details?id=app.artwhisper&referrer=" + encodeURIComponent(referrer)
+      : "https://play.google.com/store/apps/details?id=app.artwhisper&utm_source=share&utm_medium=web_preview&utm_campaign=share_page",
+    appstore: source
+      ? "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=" + encodeURIComponent(source.slice(0, 40))
+      : "https://apps.apple.com/us/app/art-whisper/id6785215327?ct=share-web_preview",
   };
 }
 
@@ -172,6 +191,7 @@ function renderPage(data, slug, reqUrl) {
   const { play: PLAY_LINK, appstore: APP_STORE_LINK } = buildStoreLinks(
     inParams.get("utm_source"),
     inParams.get("utm_content"),
+    { type: "artwork", slug },
   );
 
   const title = art.title || "Untitled";
