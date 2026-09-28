@@ -36,7 +36,7 @@ const POSTHOG_HOST = "https://us.i.posthog.com";
 // - iOS: Apple only exposes a campaign-level token (`ct`), never a per-page deferred
 //   link, so we set ct to the source (e.g. "pinterest"); iOS deferred = T1-878.
 // `dest` is the deep-link destination { type, slug }; omit it to build a plain link.
-function buildStoreLinks(src, content, dest) {
+function buildStoreLinks(src, content, dest, medium) {
   const source = src && /^[a-z0-9_-]{1,40}$/i.test(src) ? src.toLowerCase() : null;
   const slug = content && /^[a-z0-9-]{1,140}$/i.test(content) ? content : null;
   const destSlug =
@@ -52,7 +52,9 @@ function buildStoreLinks(src, content, dest) {
   // Campaign attribution — added only for a real inbound source.
   if (source) {
     ref.set("utm_source", source);
-    ref.set("utm_medium", "web");
+    // Preserve the inbound medium (e.g. comment-dm from a comment-to-DM link, T1-886)
+    // so installs are attributed to the real channel, not a generic "web".
+    ref.set("utm_medium", medium && /^[a-z0-9_-]{1,40}$/i.test(medium) ? medium.toLowerCase() : "web");
     ref.set("utm_campaign", source);
     if (slug) ref.set("utm_content", slug);
   }
@@ -192,6 +194,7 @@ function renderPage(data, slug, reqUrl) {
     inParams.get("utm_source"),
     inParams.get("utm_content"),
     { type: "artwork", slug },
+    inParams.get("utm_medium"),
   );
 
   const title = art.title || "Untitled";
