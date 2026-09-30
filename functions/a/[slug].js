@@ -652,15 +652,28 @@ function monitorScript(slug, bgImages) {
     bg: bgImages.filter((b) => b && b.url),
   });
   return `<script>(function(){
-  var D=${cfg};
+  var D=${cfg},seen={};
   function eid(){var a=new Uint8Array(16);if(self.crypto&&crypto.getRandomValues){crypto.getRandomValues(a)}return Array.prototype.map.call(a,function(b){return("0"+b.toString(16)).slice(-2)}).join("")}
   function report(kind,url){try{
     var id=eid();
-    var env=JSON.stringify({event_id:id,sent_at:new Date().toISOString()})+"\\n"+JSON.stringify({type:"event"})+"\\n"+JSON.stringify({event_id:id,level:"error",platform:"javascript",logger:"share-web",message:"Share page image failed to load ("+kind+")",tags:{surface:"share-web",slug:D.slug,image:kind},request:{url:location.href},extra:{image_url:url||null}});
+    var env=JSON.stringify({event_id:id,sent_at:new Date().toISOString()})+"\\n"+JSON.stringify({type:"event"})+"\\n"+JSON.stringify({event_id:id,level:"warning",platform:"javascript",logger:"share-web",message:"Share page image failed to load ("+kind+")",tags:{surface:"share-web",slug:D.slug,image:kind},request:{url:location.href},extra:{image_url:url||null}});
     if(navigator.sendBeacon){navigator.sendBeacon(D.ingest,new Blob([env],{type:"application/x-sentry-envelope"}))}else{fetch(D.ingest,{method:"POST",body:env,keepalive:true,mode:"no-cors"})}
   }catch(e){}}
-  Array.prototype.forEach.call(document.images||[],function(img){img.addEventListener("error",function(){report("img:"+(img.getAttribute("alt")||"")||img.src,img.currentSrc||img.src)})});
-  D.bg.forEach(function(o){var im=new Image();im.onerror=function(){report(o.kind,o.url)};im.src=o.url})
+  // Only monitor the real content images (hero/artist-portrait) passed in via D.bg — never
+  // site chrome (logo, app-store badges), which fired false "image failed to load" errors.
+  // And retry once before reporting: transient load failures (aborted navigation, ad/tracker
+  // blockers, flaky networks) clear on a second attempt, so we beacon only a genuinely dead
+  // image, at most once per URL per page load.
+  D.bg.forEach(function(o){
+    if(!o.url||seen[o.url])return;
+    var im=new Image();
+    im.onerror=function(){setTimeout(function(){
+      var rt=new Image();
+      rt.onerror=function(){if(!seen[o.url]){seen[o.url]=1;report(o.kind,o.url)}};
+      rt.src=o.url;
+    },1500)};
+    im.src=o.url;
+  })
 })();</script>`;
 }
 
