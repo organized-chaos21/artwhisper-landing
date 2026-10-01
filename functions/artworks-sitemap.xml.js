@@ -3,7 +3,7 @@
 // Serves the artwork-pages sitemap under artwhisper.app (same host as the URLs it
 // lists — Google requires that). The document itself is query-driven off the live
 // DB by the backend; we just proxy it here so the sitemap lives on the marketing
-// host alongside the hand-committed movements-sitemap.xml. See Linear T1-817.
+// host alongside the movements sitemap (functions/movements-sitemap.xml.js). See Linear T1-817.
 
 const API_BASE = "https://api.artwhisper.app";
 const FETCH_TIMEOUT_MS = 5000;
