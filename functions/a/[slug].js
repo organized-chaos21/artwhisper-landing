@@ -282,7 +282,7 @@ function renderPage(data, slug, reqUrl, related) {
   const about = renderAboutDetails(art, artistName, artistSlug);
   const movements = renderMovements(art.movement_tags, related?.movement_thumbs || {});
   const notice = renderNotice(art.what_to_notice, midImg, title, PLAY_LINK);
-  const audio = art.narration_available === false ? "" : renderAudio(title, PLAY_LINK, APP_STORE_LINK);
+  const audio = art.narration_available === false ? "" : renderAudio(title, PLAY_LINK);
   const artistSection = renderArtist(artist, PLAY_LINK);
   const further = renderWorksRail({
     key: "further",
@@ -353,18 +353,19 @@ function renderPage(data, slug, reqUrl, related) {
   </main>
 
   <footer class="foot">
+    <span>© ${new Date().getFullYear()} Bright Star. All rights reserved.</span>
     <a class="foot__report" href="https://artwhisper.app/#support">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
       See something wrong?
     </a>
-    <span>© ${new Date().getFullYear()} Bright Star. All rights reserved.</span>
   </footer>
 
-  <a class="stickybar" href="${PLAY_LINK}" target="_blank" rel="noopener">
+  <a class="stickybar" data-store-cta href="${PLAY_LINK}" target="_blank" rel="noopener">
     <img class="stickybar__logo" src="/logo.png" alt="" width="34" height="34" />
     <span class="stickybar__txt"><strong>Hear ${esc(clip(title, 34))}’s story</strong><span>Free in the Art Whisper app</span></span>
     <span class="stickybar__btn">Open</span>
   </a>
+  ${storeScript(APP_STORE_LINK)}
   ${viewerScript(slug)}
   ${railScript(slug)}
   ${analyticsScript(slug, title)}
@@ -414,7 +415,7 @@ function renderStage({ title, artistName, artistSlug, year, heroImg, midImg, bre
           <img class="nav__logo" src="/logo.png" alt="" width="37" height="37" />
           <span>Art Whisper</span>
         </a>
-        <a class="nav__open" href="${playUrl}" target="_blank" rel="noopener"><span class="nav__open-lg">Open the app</span><span class="nav__open-sm">Open app</span></a>
+        <a class="nav__open" data-store-cta href="${playUrl}" target="_blank" rel="noopener"><span class="nav__open-lg">Open the app</span><span class="nav__open-sm">Open app</span></a>
       </header>
       ${breadcrumb.nav}
     </div>
@@ -579,6 +580,20 @@ function renderMovements(tags, thumbs) {
   </section>`;
 }
 
+// One "Get the app" link per CTA, routed by device (T1-906). The page is edge-cached
+// for everyone, so the server can't pick a store per visitor: the HTML carries the
+// Google Play link (with the deferred deep-link referrer) and this swaps every
+// [data-store-cta] to the App Store on Apple devices: iPhone/iPod, iPad (incl. iPadOS,
+// which reports a Mac UA) and Mac desktops. Same rule as the landing site's appLinks.js.
+function storeScript(appStoreUrl) {
+  return `<script>(function(){
+  var ua=navigator.userAgent||"",pf=navigator.platform||"";
+  if(!(/iPad|iPhone|iPod/.test(ua)||/Mac/.test(pf)||/Mac OS X/.test(ua)))return;
+  var u=${JSON.stringify(appStoreUrl)};
+  document.querySelectorAll("[data-store-cta]").forEach(function(a){a.href=u});
+})();</script>`;
+}
+
 // What to Notice: the painting beside the first 4 details, then a "+N" card that
 // hands the rest to the app. Layout follows the painting's real shape (set on <body>
 // by the viewer script once the image loads): portrait/square = image left + card
@@ -596,7 +611,7 @@ function renderNotice(items, img, title, playUrl) {
     .join("");
   const more =
     remaining > 0
-      ? `<a class="ncard ncard--more" href="${playUrl}" target="_blank" rel="noopener">
+      ? `<a class="ncard ncard--more" data-store-cta href="${playUrl}" target="_blank" rel="noopener">
           <span class="ncard__num">+${remaining}</span>
           <p>${remaining} more detail${remaining === 1 ? " is" : "s are"} waiting.</p>
           <span class="ncard__cta">See all ${items.length} in Art Whisper →</span>
@@ -624,7 +639,7 @@ function countWord(n) {
 // Audio Deep Dive — a visual teaser (Ziv, T1-879): the play button and preview bar
 // hand off to the app; no audio streams on the web (that would generate narration
 // on demand for every visitor).
-function renderAudio(title, playUrl, appStoreUrl) {
+function renderAudio(title, playUrl) {
   const bars = [9, 18, 13, 22, 8].map((h) => `<i style="height:${h}px"></i>`).join("");
   return `<section class="sec audio">
     <div class="audio__card">
@@ -633,16 +648,15 @@ function renderAudio(title, playUrl, appStoreUrl) {
         <h2>Stand in front of it and listen</h2>
         <p>The full narration walks you through ${esc(title)} — the story behind it, the details most visitors miss, and why it matters. Free in the Art Whisper app.</p>
         <div class="audio__stores">
-          <a class="pillbtn pillbtn--dark" href="${playUrl}" target="_blank" rel="noopener">Get it on Google Play</a>
-          <a class="pillbtn" href="${appStoreUrl}" target="_blank" rel="noopener">Download on the App Store</a>
+          <a class="pillbtn pillbtn--dark" data-store-cta href="${playUrl}" target="_blank" rel="noopener">${ICON_PHONE}Get the free app</a>
         </div>
       </div>
-      <a class="audio__player" href="${playUrl}" target="_blank" rel="noopener" aria-label="Play a preview in the Art Whisper app"
+      <a class="audio__player" data-store-cta href="${playUrl}" target="_blank" rel="noopener" aria-label="Play a preview in the Art Whisper app"
          onclick="window.__awTrack&&window.__awTrack('audio_teaser_clicked')">
         <span class="audio__play">${PLAY_TRI}</span>
         <span class="audio__track"><i></i><span class="audio__times"><span>0:00</span><span>Preview · 0:30</span></span><span class="audio__free">Free preview · 0:30</span></span>
       </a>
-      <a class="audio__cta" href="${playUrl}" target="_blank" rel="noopener">${ICON_PHONE}Hear the full story in the app</a>
+      <a class="audio__cta" data-store-cta href="${playUrl}" target="_blank" rel="noopener">${ICON_PHONE}Hear the full story in the app</a>
     </div>
   </section>`;
 }
@@ -667,7 +681,7 @@ function renderArtist(artist, playUrl) {
   // The public artist page when it exists (artwork→artist internal link), else the app.
   const slug = typeof artist.slug === "string" && SLUG_RE.test(artist.slug) ? artist.slug : null;
   const href = slug ? `/artist/${slug}` : playUrl;
-  const ext = slug ? "" : ` target="_blank" rel="noopener"`;
+  const ext = slug ? "" : ` target="_blank" rel="noopener" data-store-cta`;
   return `<section class="sec artist">
     ${eyebrow("THE ARTIST")}
     <div class="artist__card">
