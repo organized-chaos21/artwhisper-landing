@@ -281,7 +281,7 @@ function renderPage(data, slug, reqUrl, related) {
 
   const about = renderAboutDetails(art, artistName, artistSlug);
   const movements = renderMovements(art.movement_tags, related?.movement_thumbs || {});
-  const notice = renderNotice(art.what_to_notice, midImg, title, PLAY_LINK);
+  const notice = renderNotice(art.what_to_notice, art.what_to_notice_meta, midImg, heroImg, title, PLAY_LINK);
   const audio = art.narration_available === false ? "" : renderAudio(title, PLAY_LINK);
   const artistSection = renderArtist(artist, PLAY_LINK);
   const further = renderWorksRail({
@@ -367,6 +367,7 @@ function renderPage(data, slug, reqUrl, related) {
   </a>
   ${storeScript(APP_STORE_LINK)}
   ${viewerScript(slug)}
+  ${noticeScript(slug)}
   ${railScript(slug)}
   ${analyticsScript(slug, title)}
   ${monitorScript(slug, [
@@ -594,13 +595,20 @@ function storeScript(appStoreUrl) {
 })();</script>`;
 }
 
-// What to Notice: the painting beside the first 4 details, then a "+N" card that
-// hands the rest to the app. Layout follows the painting's real shape (set on <body>
-// by the viewer script once the image loads): portrait/square = image left + card
-// grid; landscape = wide image + stacked cards on the right.
+// What to Notice: the painting beside the details. Layout follows the painting's real
+// shape (set on <body> by the viewer script once the image loads): portrait/square =
+// image left + card grid; landscape = wide image + stacked cards on the right.
+//
+// T1-857 "show me where": when the API sends `what_to_notice_meta` (title + 0..1
+// region per point, written while the AI looked at the image), every point is shown
+// (no "+N"), each located point gets a marker on the painting, and picking one dims
+// the rest of the painting, outlines the detail and points at it with a caption.
+// Without regions the section renders exactly as before (legacy text-only points).
 const NOTICE_SHOWN = 4;
-function renderNotice(items, img, title, playUrl) {
+function renderNotice(items, meta, img, zoomImg, title, playUrl) {
   if (!Array.isArray(items) || !items.length) return "";
+  const regions = noticeRegions(items, meta);
+  if (regions) return renderNoticeRegions(items, regions, img, zoomImg, title);
   const shown = items.slice(0, NOTICE_SHOWN);
   const remaining = items.length - shown.length;
   const cards = shown
@@ -628,6 +636,92 @@ function renderNotice(items, img, title, playUrl) {
       ${img ? `<div class="notice__img"><img src="${esc(img)}" alt="${esc(title)}" loading="lazy" decoding="async" /></div>` : ""}
       <div class="ncards">${cards}${more}</div>
     </div>
+  </section>`;
+}
+
+/**
+ * The per-point regions, validated: one entry per point (same length), each either a
+ * 0..1 box inside the image or null ("whole painting"). Null when the meta is missing,
+ * misaligned, malformed, or locates no point at all — the caller then falls back to
+ * the plain text section.
+ */
+function noticeRegions(items, meta) {
+  if (!Array.isArray(meta) || meta.length !== items.length) return null;
+  const ok = (n) => typeof n === "number" && Number.isFinite(n) && n >= 0 && n <= 1;
+  const out = meta.map((m) => {
+    const r = m && m.scope === "detail" ? m.region : null;
+    const box = r && ok(r.x) && ok(r.y) && ok(r.w) && ok(r.h) && r.w > 0 && r.h > 0 && r.x + r.w <= 1.001 && r.y + r.h <= 1.001 ? r : null;
+    const t = m && typeof m.title === "string" ? m.title.trim().slice(0, 60) : "";
+    return { title: t, box };
+  });
+  return out.some((o) => o.box) ? out : null;
+}
+
+// A marker sits on its region's top-left corner, nudged inside the painting so a
+// region touching the edge doesn't get a half-clipped number.
+const markerPct = (v) => (Math.min(0.94, Math.max(0.06, v)) * 100).toFixed(2);
+
+function renderNoticeRegions(items, regions, img, zoomImg, title) {
+  const located = regions.filter((r) => r.box).length;
+  let k = 0;
+  const cards = items
+    .map((t, i) => {
+      const r = regions[i];
+      const num = String(i + 1).padStart(2, "0");
+      const kth = r.box ? ++k : 0;
+      const chip = r.box
+        ? `<button class="nt-chip" type="button" data-nt-show="${i}">${ICON_SCAN}<span class="nt-chip__a">Show on painting</span><span class="nt-chip__b">On the painting</span></button>`
+        : `<span class="nt-chip nt-chip--whole">${ICON_FRAME}<span>Whole painting</span></span>`;
+      return `<article class="ncard nt-card" data-nt-i="${i}"${r.box ? ` data-nt-k="${kth}"` : ""}>
+        <div class="nt-card__top"><span class="ncard__num">${num}</span>${chip}</div>
+        ${r.title ? `<h3 class="nt-card__title">${esc(r.title)}</h3>` : ""}
+        <p>${esc(t)}</p>
+        ${r.box ? `<div class="nt-card__step"><button type="button" class="nt-step" data-nt-step="-1">‹ Prev</button><span>${kth} of ${located} on the painting</span><button type="button" class="nt-step" data-nt-step="1">Next ›</button></div>` : ""}
+      </article>`;
+    })
+    .join("");
+  const markers = regions
+    .map((r, i) =>
+      r.box
+        ? `<button type="button" class="nt-marker" data-nt-i="${i}" style="left:${markerPct(r.box.x)}%;top:${markerPct(r.box.y)}%" aria-label="Detail ${i + 1}${r.title ? `: ${esc(r.title)}` : ""}">${String(i + 1).padStart(2, "0")}</button>`
+        : "",
+    )
+    .join("");
+  // Point data for the script; `<` escaped so text can't close the script element.
+  const data = JSON.stringify(items.map((t, i) => ({ t: regions[i].title, text: t, b: regions[i].box }))).replace(/</g, "\\u003c");
+  const intro = `${countWord(items.length)} details hide in plain sight. Pick one and we’ll show you exactly where to look.`;
+  return `<section class="sec notice nt" data-nt-located="${located}">
+    <div class="notice__head">
+      ${eyebrow("LOOK CLOSER")}
+      <h2>What to Notice</h2>
+      <p class="notice__intro">${intro}</p>
+    </div>
+    <div class="notice__row">
+      <div class="notice__img nt-figure">
+        <div class="nt-sticky" aria-hidden="true"><span>What to Notice</span><span class="nt-sticky__count"></span><button type="button" class="nt-close" aria-label="Close">${ICON_CLOSE_SM}</button></div>
+        <div class="nt-stage">
+          <div class="nt-img"${zoomImg && zoomImg !== img ? ` data-zoom-src="${esc(zoomImg)}"` : ""}>
+            <img src="${esc(img)}" alt="${esc(title)}" loading="lazy" decoding="async" draggable="false" />
+            <div class="nt-spot" aria-hidden="true"></div>
+            ${markers}
+          </div>
+          <svg class="nt-arrow" aria-hidden="true"><line /></svg>
+          <div class="nt-cap" role="status" aria-live="polite"><strong><span class="nt-cap__n"></span> <span class="nt-cap__t"></span></strong><p class="nt-cap__x"></p><span class="nt-cap__hint">← → step through · Esc to close</span></div>
+          <button type="button" class="nt-zoom" aria-pressed="false">${ICON_ZOOM_SM}<span>Zoom to detail</span></button>
+          <div class="nt-hint"><span>${located} detail${located === 1 ? " is" : "s are"} marked · pick a number</span></div>
+        </div>
+        <div class="nt-bar" role="toolbar" aria-label="Details on the painting">
+          <button type="button" class="nt-bar__step" data-nt-step="-1" aria-label="Previous detail">‹</button>
+          <span class="nt-bar__count">${located} on the painting</span>
+          <button type="button" class="nt-bar__step" data-nt-step="1" aria-label="Next detail">›</button>
+          <i aria-hidden="true"></i>
+          <button type="button" class="nt-tour" aria-pressed="false">${PLAY_TRI_SM}<span>Guided tour</span></button>
+          <button type="button" class="nt-markers" aria-pressed="true">${ICON_PIN}<span>Markers on</span></button>
+        </div>
+      </div>
+      <div class="ncards nt-cards">${cards}</div>
+    </div>
+    <script type="application/json" class="nt-data">${data}</script>
   </section>`;
 }
 
@@ -780,6 +874,12 @@ const ICON_ZOOM = svg(`<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="
 const ICON_EXPAND = svg(`<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>`);
 const ICON_CLOSE = svg(`<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`, 22);
 const ICON_CHEV_DOWN = svg(`<polyline points="6 9 12 15 18 9"/>`, 18);
+const ICON_SCAN = svg(`<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/>`, 12);
+const ICON_FRAME = svg(`<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>`, 12);
+const ICON_CLOSE_SM = svg(`<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`, 16);
+const ICON_ZOOM_SM = svg(`<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>`, 15);
+const ICON_PIN = svg(`<path d="M12 21s-7-6.1-7-11a7 7 0 0 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>`, 15);
+const PLAY_TRI_SM = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="7 4 20 12 7 20 7 4"/></svg>`;
 const ICON_PHONE = svg(`<rect x="6" y="2" width="12" height="20" rx="2.5"/><line x1="11" y1="18" x2="13" y2="18"/>`, 18);
 
 // ─── Viewer: zoom + pan + full screen (T1-879) ──────────────────────
@@ -828,6 +928,132 @@ function viewerScript(slug) {
   document.addEventListener("fullscreenchange",function(){ if(!document.fullscreenElement) exit(); });
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") exit(); if(!st.classList.contains("is-full")) return; if(e.key==="+"||e.key==="=") set(z+1,"key"); if(e.key==="-") set(z-1,"key"); });
   window.addEventListener("resize",apply);
+})();</script>`;
+}
+
+// ─── What to Notice "show me where" (T1-857) ─────────────────────────
+// Pencil: "What to Notice Regions" (desktop selected + default + interaction spec)
+// and "Mobile Web 390 · DEFAULT / SELECTED / notes". Only runs when the section was
+// rendered with regions; a text-only section has no .nt and this exits at once.
+function noticeScript(slug) {
+  return `<script>(function(){
+  var sec=document.querySelector(".nt"); if(!sec) return;
+  var pts; try{ pts=JSON.parse(sec.querySelector(".nt-data").textContent) }catch(e){ return; }
+  var fig=sec.querySelector(".nt-figure"),stage=sec.querySelector(".nt-stage"),box=sec.querySelector(".nt-img"),img=box.querySelector("img");
+  var spot=sec.querySelector(".nt-spot"),cap=sec.querySelector(".nt-cap"),arrow=sec.querySelector(".nt-arrow"),line=arrow.querySelector("line");
+  var hint=sec.querySelector(".nt-hint"),tourBtn=sec.querySelector(".nt-tour"),mkBtn=sec.querySelector(".nt-markers"),zoomBtn=sec.querySelector(".nt-zoom");
+  var count=sec.querySelector(".nt-bar__count"),stickyCount=sec.querySelector(".nt-sticky__count");
+  var located=[]; pts.forEach(function(p,i){ if(p.b) located.push(i); });
+  var cards=[].slice.call(sec.querySelectorAll(".nt-card")),markers=[].slice.call(sec.querySelectorAll(".nt-marker"));
+  var sel=-1,tour=null,paused=false,pushed=false,zoomed=false;
+  var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var mobile=function(){ return window.matchMedia&&matchMedia("(max-width: 768px)").matches; };
+  function track(ev,p){ try{ if(window.__awTrack) window.__awTrack(ev,Object.assign({slug:${JSON.stringify(slug)}},p||{})) }catch(e){} }
+  var two=function(i){ return (i+1<10?"0":"")+(i+1); };
+  // One-line hint: hidden after the first pick, and stays dismissed.
+  try{ if(localStorage.getItem("aw_nt_hint")==="1") hint.hidden=true; }catch(e){}
+  function dismissHint(){ if(hint.hidden) return; hint.hidden=true; try{ localStorage.setItem("aw_nt_hint","1") }catch(e){} }
+
+  function setBox(el,b){ el.style.left=(b.x*100)+"%"; el.style.top=(b.y*100)+"%"; el.style.width=(b.w*100)+"%"; el.style.height=(b.h*100)+"%"; }
+
+  // Desktop caption: beside the region on the emptiest side (right / left, else
+  // below / above), with an arrow ending at the region's edge. Mobile: the caption
+  // sits under the image (CSS), no arrow.
+  function placeCaption(b){
+    arrow.style.display="none";
+    if(mobile()){ cap.style.left=cap.style.top=""; return; }
+    var W=box.clientWidth,H=box.clientHeight,cw=cap.offsetWidth,ch=cap.offsetHeight,gap=36;
+    var rx=b.x*W,ry=b.y*H,rw=b.w*W,rh=b.h*H,cx,cy,ax,ay,bx,by;
+    var right=W-(rx+rw),left=rx,below=H-(ry+rh),above=ry;
+    if(right>=cw+gap||left>=cw+gap){
+      var onRight=right>=left; cx=onRight?rx+rw+gap:rx-gap-cw; cy=Math.max(8,Math.min(H-ch-8,ry+rh/2-ch/2));
+      ax=onRight?cx:cx+cw; ay=cy+ch/2; bx=onRight?rx+rw:rx; by=Math.max(ry,Math.min(ry+rh,ay));
+    }else{
+      var onBelow=below>=above; cx=Math.max(8,Math.min(W-cw-8,rx+rw/2-cw/2)); cy=onBelow?Math.min(H-ch-8,ry+rh+gap):Math.max(8,ry-gap-ch);
+      ax=cx+cw/2; ay=onBelow?cy:cy+ch; bx=Math.max(rx,Math.min(rx+rw,ax)); by=onBelow?ry+rh:ry;
+    }
+    cap.style.left=cx+"px"; cap.style.top=cy+"px";
+    arrow.setAttribute("viewBox","0 0 "+W+" "+H); arrow.setAttribute("width",W); arrow.setAttribute("height",H);
+    line.setAttribute("x1",ax); line.setAttribute("y1",ay); line.setAttribute("x2",bx); line.setAttribute("y2",by);
+    arrow.style.display="block";
+  }
+
+  function show(i,via){
+    var p=pts[i]; if(!p) return;
+    dismissHint(); if(zoomed) setZoom(false);
+    sel=i;
+    cards.forEach(function(c){ c.classList.toggle("is-sel",+c.dataset.ntI===i); });
+    if(!p.b){ // "whole painting": highlight the card only — no dimming, no outline
+      sec.classList.remove("is-open"); spot.classList.remove("on"); cap.classList.remove("on"); arrow.style.display="none";
+      markers.forEach(function(m){ m.classList.remove("is-sel"); }); track("notice_point_selected",{i:i,via:via,whole:true}); return;
+    }
+    sec.classList.add("is-open");
+    setBox(spot,p.b); spot.classList.add("on");
+    markers.forEach(function(m){ var on=+m.dataset.ntI===i; m.classList.toggle("is-sel",on); if(on&&!reduce){ m.classList.remove("pulse"); void m.offsetWidth; m.classList.add("pulse"); } });
+    var k=located.indexOf(i)+1;
+    cap.querySelector(".nt-cap__n").textContent=two(i); cap.querySelector(".nt-cap__t").textContent=p.t||"";
+    cap.querySelector(".nt-cap__x").textContent=p.text; cap.classList.add("on");
+    count.textContent=k+" / "+located.length; stickyCount.textContent=k+" of "+located.length+" on the painting";
+    placeCaption(p.b);
+    // Bring the painting into view (mobile: it pins under the slim bar).
+    var r=fig.getBoundingClientRect();
+    if(mobile()){ if(!pushed){ try{ history.pushState({nt:1},""); pushed=true; }catch(e){} } if(r.top<0||r.top>innerHeight*0.4) fig.scrollIntoView({block:"start",behavior:reduce?"auto":"smooth"}); }
+    else if(r.top<0||r.bottom>innerHeight) stage.scrollIntoView({block:"center",behavior:reduce?"auto":"smooth"});
+    track("notice_point_selected",{i:i,via:via});
+  }
+  function clear(fromPop){
+    if(sel<0) return; sel=-1; stopTour(); if(zoomed) setZoom(false);
+    sec.classList.remove("is-open"); spot.classList.remove("on"); cap.classList.remove("on"); arrow.style.display="none";
+    cards.forEach(function(c){ c.classList.remove("is-sel"); }); markers.forEach(function(m){ m.classList.remove("is-sel","pulse"); });
+    count.textContent=located.length+" on the painting";
+    if(pushed&&!fromPop){ pushed=false; try{ history.back(); }catch(e){} } else pushed=false;
+  }
+  function step(d){
+    if(!located.length) return;
+    var k=located.indexOf(sel);
+    var n=k<0?(d>0?0:located.length-1):(k+d+located.length)%located.length;
+    show(located[n],"step");
+  }
+
+  // Tour: ~6 s per located point; pauses while the pointer is over the section.
+  function stopTour(){ if(tour){ clearInterval(tour); tour=null; } tourBtn.setAttribute("aria-pressed","false"); tourBtn.querySelector("span").textContent="Guided tour"; }
+  function startTour(){ stopTour(); if(sel<0||!pts[sel].b) show(located[0],"tour"); tourBtn.setAttribute("aria-pressed","true"); tourBtn.querySelector("span").textContent="Pause tour";
+    tour=setInterval(function(){ if(paused) return; var k=located.indexOf(sel); if(k>=located.length-1){ stopTour(); return; } step(1); },6000); track("notice_tour_started"); }
+
+  function setZoom(on){
+    var p=pts[sel]; if(on&&(!p||!p.b)) return;
+    zoomed=on; zoomBtn.setAttribute("aria-pressed",String(on)); zoomBtn.querySelector("span").textContent=on?"Zoom out":"Zoom to detail"; box.classList.toggle("is-zoom",on);
+    if(on){ var z=box.getAttribute("data-zoom-src"); if(z&&img.getAttribute("src")!==z){ img.setAttribute("src",z); }
+      box.style.transformOrigin=((p.b.x+p.b.w/2)*100)+"% "+((p.b.y+p.b.h/2)*100)+"%"; cap.classList.remove("on"); arrow.style.display="none"; track("notice_zoom",{i:sel}); }
+    else { box.style.transformOrigin=""; if(sel>=0&&pts[sel].b){ cap.classList.add("on"); placeCaption(pts[sel].b); } }
+  }
+
+  // ── wiring ──
+  markers.forEach(function(m){ m.addEventListener("click",function(e){ e.stopPropagation(); show(+m.dataset.ntI,"marker"); }); });
+  cards.forEach(function(c){
+    var i=+c.dataset.ntI;
+    c.addEventListener("click",function(e){ if(e.target.closest("[data-nt-step]")) return; show(i,"card"); });
+    // Hover (desktop): outline preview only.
+    c.addEventListener("mouseenter",function(){ if(mobile()||!pts[i].b||sel===i) return; setBox(spot,pts[i].b); spot.classList.add("preview"); });
+    c.addEventListener("mouseleave",function(){ spot.classList.remove("preview"); if(sel>=0&&pts[sel].b) setBox(spot,pts[sel].b); });
+  });
+  sec.addEventListener("click",function(e){ var s=e.target.closest("[data-nt-step]"); if(s){ e.stopPropagation(); stopTour(); step(+s.getAttribute("data-nt-step")); } });
+  // A click on the painting outside the outlined detail closes it.
+  box.addEventListener("click",function(e){ if(sel<0||!pts[sel].b||e.target.closest(".nt-marker")) return;
+    var r=box.getBoundingClientRect(),b=pts[sel].b,x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    if(zoomed) return; if(x<b.x||x>b.x+b.w||y<b.y||y>b.y+b.h) clear(); });
+  sec.querySelector(".nt-close").addEventListener("click",function(){ clear(); });
+  tourBtn.addEventListener("click",function(){ tour?stopTour():startTour(); });
+  mkBtn.addEventListener("click",function(){ var on=!sec.classList.toggle("nt-nomarkers"); mkBtn.setAttribute("aria-pressed",String(on)); mkBtn.querySelector("span").textContent=on?"Markers on":"Markers off"; });
+  zoomBtn.addEventListener("click",function(){ setZoom(!zoomed); });
+  sec.addEventListener("mouseenter",function(){ paused=true; }); sec.addEventListener("mouseleave",function(){ paused=false; });
+  document.addEventListener("keydown",function(e){ if(sel<0) return; var t=e.target; if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    if(e.key==="Escape"){ clear(); } else if(e.key==="ArrowRight"){ e.preventDefault(); stopTour(); step(1); } else if(e.key==="ArrowLeft"){ e.preventDefault(); stopTour(); step(-1); } });
+  window.addEventListener("popstate",function(){ if(pushed){ pushed=false; clear(true); } });
+  // Mobile: swipe the caption to step.
+  var sx=null; cap.addEventListener("touchstart",function(e){ sx=e.touches[0].clientX; },{passive:true});
+  cap.addEventListener("touchend",function(e){ if(sx==null) return; var dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>40){ stopTour(); step(dx<0?1:-1); } },{passive:true});
+  window.addEventListener("resize",function(){ if(sel>=0&&pts[sel].b&&!zoomed) placeCaption(pts[sel].b); });
 })();</script>`;
 }
 
@@ -1250,6 +1476,97 @@ body[data-shape="landscape"] .ncard__num{font-size:22px}
   .stickybar__txt span{font-size:12px;color:rgba(245,239,227,.65)}
   .stickybar__btn{flex:none;padding:9px 18px;border-radius:99px;background:#E9A24A;color:var(--ink);font-size:14px;font-weight:600}
   .stage.is-full ~ .stickybar{display:none}
+}
+
+/* ── What to Notice "show me where" (T1-857) ── */
+.nt .ncards{grid-template-columns:repeat(2,minmax(0,1fr))}
+.nt-figure{position:relative}
+.nt-stage{position:relative;display:inline-block;max-width:100%;vertical-align:top}
+.nt-img{position:relative;overflow:hidden;border-radius:4px;transition:transform .45s ease;cursor:default}
+.nt-img img{display:block;width:auto;height:auto;max-width:100%;max-height:760px;border-radius:0;user-select:none;-webkit-user-drag:none}
+.nt-img.is-zoom{transform:scale(2.25);cursor:zoom-out}
+.nt-img.is-zoom .nt-marker{display:none}
+.nt-stage:has(.is-zoom){overflow:hidden;border-radius:4px}
+/* Spotlight: the region stays bright, everything else dims to ~35% (box-shadow is clipped by .nt-img). */
+.nt-spot{position:absolute;display:none;border-radius:6px;pointer-events:none;box-shadow:0 0 0 9999px rgba(12,10,8,.65),0 0 0 2px #E7B468,0 0 16px 2px rgba(224,160,80,.55);transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease}
+.nt-spot.on{display:block}
+.nt-spot.preview:not(.on){display:block;box-shadow:0 0 0 2px rgba(231,180,104,.95),0 0 12px rgba(224,160,80,.5)}
+.nt-spot.on.preview{box-shadow:0 0 0 9999px rgba(12,10,8,.65),0 0 0 2px rgba(231,180,104,.6),0 0 0 2px #E7B468}
+.nt-marker{position:absolute;z-index:2;transform:translate(-50%,-50%);min-width:26px;height:26px;padding:0 6px;border-radius:13px;
+  border:1px solid #CDBB94;background:rgba(251,246,236,.92);color:#5C4620;font:600 10.5px/24px var(--sans);letter-spacing:.2px;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.35);transition:transform .15s,background .15s}
+.nt-marker:hover{transform:translate(-50%,-50%) scale(1.08)}
+.nt-marker.is-sel{min-width:32px;height:32px;border-radius:16px;line-height:30px;font-size:12px;background:var(--gold);border:2px solid #FBF6EC;color:#1A1510;z-index:3}
+.nt-marker.pulse{animation:ntpulse 1.1s ease-out 1}
+@keyframes ntpulse{0%{box-shadow:0 0 0 0 rgba(212,136,44,.6)}100%{box-shadow:0 0 0 16px rgba(212,136,44,0)}}
+.nt.nt-nomarkers .nt-marker:not(.is-sel){display:none}
+.nt-arrow{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;display:none;z-index:3}
+.nt-arrow line{stroke:#E7B468;stroke-width:2;stroke-linecap:round}
+.nt-cap{position:absolute;z-index:4;width:300px;display:none;padding:14px 16px;border-radius:10px;background:rgba(21,18,14,.92);border:1px solid rgba(231,180,104,.35);
+  color:var(--cream);box-shadow:0 10px 30px rgba(0,0,0,.35);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.nt-cap.on{display:block}
+.nt-cap strong{display:block;font-size:15px;font-weight:600}
+.nt-cap__n{font-family:var(--serif);font-weight:400;color:#E7B468;margin-right:4px}
+.nt-cap__x{margin:6px 0 0;font-size:13.5px;line-height:1.5;color:rgba(245,239,227,.88)}
+.nt-cap__hint{display:block;margin-top:8px;font-size:11px;color:rgba(245,239,227,.5)}
+.nt-hint{position:absolute;left:0;right:0;bottom:12px;z-index:2;display:flex;justify-content:center;pointer-events:none}
+.nt-hint span{padding:7px 13px;border-radius:99px;background:rgba(21,18,14,.8);color:var(--cream);font-size:12.5px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.nt.is-open .nt-hint{display:none}
+.nt-zoom{position:absolute;right:12px;top:12px;z-index:5;display:none;align-items:center;gap:7px;padding:8px 13px;border:0;border-radius:99px;
+  background:rgba(21,18,14,.8);color:var(--cream);font:500 12.5px var(--sans);cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.nt.is-open .nt-zoom{display:inline-flex}
+.nt-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:12px;padding:6px 8px;border-radius:99px;border:1px solid var(--line);background:var(--card);width:max-content;max-width:100%}
+.nt-bar i{width:1px;height:20px;background:var(--line)}
+.nt-bar button{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:var(--ink);font:500 13px var(--sans);padding:6px 10px;border-radius:99px;cursor:pointer}
+.nt-bar button:hover{background:#F1ECE2}
+.nt-tour{color:var(--brown)!important}
+.nt-tour[aria-pressed="true"]{background:var(--gold-soft,#F3E4C8)!important}
+.nt-bar__count{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:96px;text-align:center}
+.nt-bar__step{font-size:18px!important;padding:2px 10px!important}
+.nt-sticky{display:none}
+/* Cards */
+.nt-card{cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.nt-card__top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nt-card__title{margin:0;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--ink)}
+.nt-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;border:1px solid #CDBB94;background:#FFFDF8;color:var(--brown);
+  font:600 10px/1 var(--sans);letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.nt-chip--whole{border-color:var(--rule);background:#EFEBE3;color:#8A8172;cursor:default}
+.nt-chip svg{width:12px;height:12px}
+.nt-card.is-sel{border-color:var(--gold);background:#FFFDF8;box-shadow:0 4px 18px rgba(212,136,44,.18)}
+.nt-card.is-sel .nt-chip:not(.nt-chip--whole){background:var(--gold);border-color:var(--gold);color:#1A1510}
+.nt-chip__b{display:none}
+.nt-card.is-sel .nt-chip__a{display:none}
+.nt-card.is-sel .nt-chip__b{display:inline}
+.nt-card__step{display:none;align-items:center;justify-content:space-between;gap:8px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+.nt-card.is-sel .nt-card__step{display:flex}
+.nt-step{border:0;background:none;color:var(--brown);font:600 11px var(--sans);letter-spacing:1px;text-transform:uppercase;cursor:pointer;padding:4px 2px}
+.nt-card:focus-within,.nt-marker:focus-visible,.nt-bar button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){.nt-img,.nt-spot,.nt-marker{transition:none}.nt-marker.pulse{animation:none}}
+@media (max-width:1439px){ .nt .ncards{grid-template-columns:minmax(0,1fr)} }
+@media (max-width:768px){
+  .nt-figure{display:flex;flex-direction:column}
+  .nt-stage{display:block}
+  .nt-img img{max-height:none;width:100%}
+  .nt-marker{min-width:24px;height:24px;font-size:10px;line-height:22px}
+  .nt-hint span{font-size:12px}
+  .nt-cap{position:static;width:auto;margin-top:12px;background:var(--ink);border-color:transparent;transform:none}
+  .nt-cap__hint{display:none}
+  .nt-bar{border-radius:12px;width:100%;justify-content:space-between}
+  .nt-bar .nt-bar__step,.nt-bar .nt-bar__count,.nt-bar i{display:none}
+  .nt.is-open .nt-bar .nt-bar__step,.nt.is-open .nt-bar .nt-bar__count{display:inline-flex}
+  /* Open: the painting pins under a slim bar while the cards scroll beneath. */
+  .nt.is-open .nt-figure{position:sticky;top:0;z-index:20;background:var(--bg);margin:0 calc(var(--pad) * -1);padding:0 var(--pad) 10px;box-shadow:0 8px 16px -12px rgba(0,0,0,.35)}
+  .nt.is-open .nt-sticky{display:flex;align-items:center;justify-content:space-between;gap:10px;height:48px;font-family:var(--serif);font-size:16px;color:var(--ink)}
+  .nt-sticky__count{margin-left:auto;font-family:var(--sans);font-size:12px;color:var(--muted)}
+  .nt-close{width:32px;height:32px;border-radius:16px;border:0;background:#E9E3D6;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .nt .ncard.nt-card{flex-direction:column;align-items:stretch;gap:10px}
+  .nt.is-open .nt-img img{max-height:38vh;width:auto;margin:0 auto}
+  .nt.is-open .nt-cap{margin-top:10px;padding:12px 14px}
+  .nt.is-open .nt-bar{flex-wrap:nowrap;margin-top:8px;padding:2px 6px}
+  .nt.is-open .nt-markers{display:none}
+  .nt.is-open .nt-stage{display:flex;flex-direction:column;align-items:center}
+  .nt.is-open .nt-cap{align-self:stretch}
+  .nt.is-open .nt-img{display:inline-block}
 }
 `;
 
