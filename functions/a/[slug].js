@@ -162,7 +162,8 @@ export async function onRequestGet(context) {
 
   // Success — cache at the edge for an hour; the underlying artwork is stable.
   const related = await relatedP;
-  return html(renderPage(data, canonical || slug, context.request.url, related), 200, 3600);
+  // Without the related rows, cache briefly so the full page returns soon.
+  return html(renderPage(data, canonical || slug, context.request.url, related), 200, related ? 3600 : 300);
 }
 
 const RELATED_TIMEOUT_MS = 2500;
