@@ -85,6 +85,18 @@ export async function onRequestGet(context) {
   const slug = String(context.params.slug || "");
   if (!SLUG_RE.test(slug)) return html(renderNotFound(), 404, 60);
 
+  // The public movement list (85 rows, edge-cached for an hour) lets "came before /
+  // after" names link to every movement that has a page (T1-909). Fail-soft: without
+  // it the page falls back to the API's own before/after matches.
+  const listPromise = fetch(`${API_BASE}/v1/movements`, {
+    headers: { accept: "application/json" },
+    cf: { cacheTtl: 3600, cacheEverything: true },
+    signal: AbortSignal.timeout(2500),
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => (Array.isArray(j?.movements) ? j.movements : []))
+    .catch(() => []);
+
   let data;
   try {
     const controller = new AbortController();
@@ -121,7 +133,7 @@ export async function onRequestGet(context) {
   // Related + prev/next movements carry their featured-artwork `image_url`
   // straight from GET /v1/movements/:slug, so the cards render thumbnails
   // without any per-movement edge fetch.
-  return html(renderPage(data, canonical || slug, context.request.url), 200, 3600);
+  return html(renderPage(data, canonical || slug, context.request.url, await listPromise), 200, 3600);
 }
 
 function html(body, status, maxAge) {
@@ -175,42 +187,6 @@ function renderBreadcrumb(items) {
 
 
 
-// Some enrichment text reaches us double-encoded ("CafÃ©", "â€”" for an em dash) —
-// UTF-8 bytes that were read as Latin-1 somewhere upstream. Repair it for display
-// (T1-907): only strings showing the tell-tale sequences are touched, and anything
-// that doesn't decode cleanly is left as it was.
-function fixText(s) {
-  if (typeof s !== "string" || !/[ÃÂâ][\u0080-ÿ‐-›€]/.test(s)) return s;
-  try {
-    const bytes = [];
-    for (const ch of s) {
-      const c = ch.codePointAt(0);
-      if (c < 256) bytes.push(c);
-      else {
-        const k = CP1252.indexOf(c);
-        if (k < 0) return s;
-        bytes.push(0x80 + k);
-      }
-    }
-    return new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
-  } catch {
-    return s;
-  }
-}
-// Windows-1252 code points for bytes 0x80–0x9F (where it differs from Latin-1).
-const CP1252 = [0x20ac, 0x81, 0x201a, 0x192, 0x201e, 0x2026, 0x2020, 0x2021, 0x2c6, 0x2030, 0x160, 0x2039, 0x152, 0x8d, 0x17d, 0x8f,
-  0x90, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014, 0x2dc, 0x2122, 0x161, 0x203a, 0x153, 0x9d, 0x17e, 0x178];
-function fixDeep(v) {
-  if (typeof v === "string") return fixText(v);
-  if (Array.isArray(v)) return v.map(fixDeep);
-  if (v && typeof v === "object") {
-    const o = {};
-    for (const k of Object.keys(v)) o[k] = fixDeep(v[k]);
-    return o;
-  }
-  return v;
-}
-
 /** "1886s-1905s" → "1886–1905" (the stored period strings carry a stray "s"). */
 const cleanPeriod = (p) =>
   String(p || "")
@@ -233,6 +209,42 @@ const ICON_PREV = svg(`<polyline points="15 18 9 12 15 6"/>`);
 const ICON_NEXT = svg(`<polyline points="9 18 15 12 9 6"/>`);
 const ICON_PHONE = svg(`<rect x="6" y="2" width="12" height="20" rx="2.5"/><line x1="11" y1="18" x2="13" y2="18"/>`, 18);
 
+/**
+ * Escape a "came before / after" phrase and turn every movement name in it that has
+ * a page into a link (T1-909) — e.g. "Modernism / Abstract Expressionism" links both
+ * when both exist; names without a page stay plain text. Longest names win, and a
+ * name only matches as a whole word ("Modernism" never matches inside "Postmodernism").
+ */
+function nameMatches(src, known) {
+  const marks = [];
+  const list = known.filter((k) => k?.slug && k.name).sort((a, b) => b.name.length - a.name.length);
+  for (const k of list) {
+    const re = new RegExp(String.raw`(?<![\p{L}\p{N}])` + k.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + String.raw`(?![\p{L}\p{N}])`, "giu");
+    let mm;
+    while ((mm = re.exec(src))) {
+      const s0 = mm.index, e0 = s0 + mm[0].length;
+      if (!marks.some((x) => s0 < x.e && e0 > x.s)) marks.push({ s: s0, e: e0, slug: k.slug, txt: mm[0], mv: k });
+    }
+  }
+  return marks.sort((x, y) => x.s - y.s);
+}
+
+/** The first movement (with a page) named in the text, or null. */
+function firstNamed(text, known) {
+  return nameMatches(String(text || ""), known)[0]?.mv || null;
+}
+
+function linkNames(text, known) {
+  const src = String(text || "");
+  const marks = nameMatches(src, known);
+  let out = "", at = 0;
+  for (const x of marks) {
+    out += esc(src.slice(at, x.s)) + `<a class="dl__link" href="/movement/${esc(x.slug)}">${esc(x.txt)}</a>`;
+    at = x.e;
+  }
+  return out + esc(src.slice(at));
+}
+
 /** Split the overview into paragraphs. */
 const paragraphs = (text) =>
   String(text || "")
@@ -244,8 +256,7 @@ const paragraphs = (text) =>
 // Design: Pencil "Art Movement v1.1" (Full-Screen Stage, Browser 1920 + Mobile Web 390),
 // the same system as the artwork page (/a/{slug}, T1-879). Everything stays free and in
 // the HTML (this is an SEO page, T1-813): "+N more" cards expand in place.
-function renderPage(raw, slug, reqUrl) {
-  const data = fixDeep(raw);
+function renderPage(data, slug, reqUrl, allMovements = []) {
   let inParams;
   try {
     inParams = new URL(reqUrl).searchParams;
@@ -261,9 +272,21 @@ function renderPage(raw, slug, reqUrl) {
   const artists = Array.isArray(data.key_artists) ? data.key_artists : [];
   const works = Array.isArray(data.notable_works) ? data.notable_works : [];
   const related = Array.isArray(data.related_movements) ? data.related_movements : [];
-  const before = data.before_movement || null;
-  const after = data.after_movement || null;
   const t = m.timeline || {};
+  // Every movement with a page (minus this one) — plus the API's own matches as a fallback.
+  const known = [];
+  const seenSlug = new Set([slug]);
+  for (const o of [...allMovements, data.before_movement, data.after_movement, ...related]) {
+    if (o?.slug && o.name && !seenSlug.has(o.slug)) {
+      seenSlug.add(o.slug);
+      known.push(o);
+    }
+  }
+  // Timeline / prev-next cards: the first movement actually named in the "came before /
+  // after" text. The API's fuzzy match is used only when there is no text — it can pick a
+  // look-alike ("Impressionism" → Neo-Impressionism).
+  const before = t.what_came_before ? firstNamed(t.what_came_before, known) : data.before_movement || null;
+  const after = t.what_came_after ? firstNamed(t.what_came_after, known) : data.after_movement || null;
 
   const name = m.name || "Art Movement";
   const breadcrumb = renderBreadcrumb([
@@ -340,8 +363,8 @@ function renderPage(raw, slug, reqUrl) {
   ${renderStage({ name, period, origin, gallery, breadcrumb, playUrl: PLAY_LINK })}
   <main class="page">
   ${lede ? `<section class="lede" id="lede"><span class="lede__rule"></span><p class="lede__text">“${esc(lede)}”</p><span class="lede__rule"></span></section>` : `<span id="lede"></span>`}
-  ${renderAbout(paras, { period, peak: t.peaked, origin, artists, before, after, t })}
-  ${renderTimeline(t, before, after)}
+  ${renderAbout(paras, { period, peak: t.peaked, origin, artists, before, after, t, known })}
+  ${renderTimeline(t, before, after, known)}
   ${renderChars(Array.isArray(m.key_characteristics) ? m.key_characteristics : [], name)}
   ${renderSpot(Array.isArray(m.how_to_spot_it) ? m.how_to_spot_it : [], spotImg, name)}
   ${renderFacts(Array.isArray(m.fun_facts) ? m.fun_facts : [])}
@@ -432,7 +455,7 @@ function renderStage({ name, period, origin, gallery, breadcrumb, playUrl }) {
 
 // About (overview, minus the lede sentence) + "At a glance" facts — each row only when
 // its data exists.
-function renderAbout(paras, { period, peak, origin, artists, before, after, t }) {
+function renderAbout(paras, { period, peak, origin, artists, before, after, t, known }) {
   const rows = [];
   const row = (l, v) => rows.push(`<dt>${l}</dt><dd>${v}</dd>`);
   const mvLink = (o) => `<a class="dl__link" href="/movement/${esc(o.slug)}">${esc(o.name)}</a>`;
@@ -442,9 +465,9 @@ function renderAbout(paras, { period, peak, origin, artists, before, after, t })
   const named = artists.filter((a) => a?.name).slice(0, 4);
   if (named.length)
     row("Key artists", named.map((a) => `<a class="dl__link" href="/artist/${esc(a.slug || a.id)}">${esc(a.name)}</a>`).join(", "));
-  if (before?.slug) row("Came before", mvLink(before));
-  else if (t.what_came_before) row("Came before", esc(t.what_came_before));
-  if (t.what_came_after) row("Came after", esc(t.what_came_after));
+  if (t.what_came_before) row("Came before", linkNames(t.what_came_before, known));
+  else if (before?.slug) row("Came before", mvLink(before));
+  if (t.what_came_after) row("Came after", linkNames(t.what_came_after, known));
   else if (after?.slug) row("Came after", mvLink(after));
   if (!paras.length && !rows.length) return "";
   const text = paras.length ? `<div class="about__text">${eyebrow("ABOUT THE MOVEMENT")}${paras.map((p) => `<p>${esc(p)}</p>`).join("")}</div>` : "";
@@ -453,7 +476,7 @@ function renderAbout(paras, { period, peak, origin, artists, before, after, t })
 }
 
 // Timeline: what came before → started / peaked / ended → what came after.
-function renderTimeline(t, before, after) {
+function renderTimeline(t, before, after, known) {
   const pts = [
     ["STARTED", t.started],
     ["PEAKED", t.peaked],
@@ -469,7 +492,7 @@ function renderTimeline(t, before, after) {
           o?.slug
             ? `<a class="tl__mv" href="/movement/${esc(o.slug)}"><span class="tl__img"${cssUrl(o.image_url) ? ` style="background-image:url('${cssUrl(o.image_url)}')"` : ""}></span><span><strong>${esc(o.name)}</strong>${o.time_period ? `<em>${esc(cleanPeriod(o.time_period))}</em>` : ""}</span></a>`
             : ""
-        }${text && !(o?.name && text === o.name) ? `<span class="tl__also">${esc(text)}</span>` : ""}</div>`
+        }${text && !(o?.name && text === o.name) ? `<span class="tl__also">${linkNames(text, known)}</span>` : ""}</div>`
       : `<div class="tl__side"></div>`;
   const track = pts
     .map(
@@ -478,9 +501,9 @@ function renderTimeline(t, before, after) {
     )
     .join("");
   const list = [
-    before?.slug || t.what_came_before ? `<li class="tlm__mv"><span class="tlm__k">CAME BEFORE</span><span class="tlm__v">${esc(before?.name || t.what_came_before)}</span></li>` : "",
+    before?.slug || t.what_came_before ? `<li class="tlm__mv"><span class="tlm__k">CAME BEFORE</span><span class="tlm__v">${t.what_came_before ? linkNames(t.what_came_before, known) : esc(before.name)}</span></li>` : "",
     ...pts.map(([k, y]) => `<li><span class="tlm__k">~${y} · ${k}</span></li>`),
-    after?.slug || t.what_came_after ? `<li class="tlm__mv"><span class="tlm__k">CAME AFTER</span><span class="tlm__v">${esc(t.what_came_after || after?.name)}</span></li>` : "",
+    after?.slug || t.what_came_after ? `<li class="tlm__mv"><span class="tlm__k">CAME AFTER</span><span class="tlm__v">${t.what_came_after ? linkNames(t.what_came_after, known) : esc(after.name)}</span></li>` : "",
   ].join("");
   return `<section class="sec timeline">
     ${eyebrow("TIMELINE")}
@@ -584,7 +607,7 @@ function renderArtists(artists) {
   );
   return `<section class="sec artists">
     ${eyebrow("KEY ARTISTS")}
-    <h2 class="sec__h">The painters who defined it</h2>
+    <h2 class="sec__h">The artists who defined it</h2>
     <div class="agrid">${cards}</div>
   </section>`;
 }
@@ -1293,6 +1316,7 @@ a.chip:hover{background:#F5EEDF;border-color:var(--gold)}
   .tlm__k{display:block;font-size:11px;font-weight:600;letter-spacing:1.4px;color:#B06D1C}
   .tlm__mv .tlm__k{color:var(--brown)}
   .tlm__v{display:block;margin-top:3px;font-family:var(--serif);font-size:18px;color:var(--ink)}
+  .tlm__v a,.tl__also a{color:var(--brown)}
   .cgrid,.agrid{display:flex;overflow-x:auto;gap:12px;margin:16px calc(var(--pad) * -1) 0 0;padding-right:var(--pad);scrollbar-width:none;scroll-snap-type:x mandatory}
   .cgrid::-webkit-scrollbar,.agrid::-webkit-scrollbar{display:none}
   .ccard,.cgrid .mcard{flex:0 0 270px;scroll-snap-align:start;padding:20px}
