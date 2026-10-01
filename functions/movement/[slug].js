@@ -369,7 +369,13 @@ function renderHero(name, subtitle, gallery) {
       const c = cssUrl(g.url);
       const full = cssUrl(g.full || g.url);
       const orig = cssUrl(g.url);
-      return `<div class="hero__slide"${c ? ` style="background-image:url('${c}')"` : ""} data-full="${esc(full || "")}" data-orig="${esc(orig || "")}" data-id="${esc(g.id || "")}" data-title="${esc(g.title || "")}" data-by="${esc(g.by || "")}"></div>`;
+      // No-crop stage (T1-879): the whole painting, bound on both axes, over a
+      // blurred copy of itself. The large image falls back to the small one.
+      const art = full || c;
+      const inner = c
+        ? `<span class="hero__field" style="background-image:url('${c}')"></span><span class="hero__frame"><img class="hero__art" src="${esc(art)}" alt="${esc(g.title || "")}" data-f="${esc(art !== c ? c : "")}" onerror="if(this.dataset.f){this.src=this.dataset.f;this.dataset.f=''}" decoding="async" /></span>`
+        : "";
+      return `<div class="hero__slide" data-full="${esc(full || "")}" data-orig="${esc(orig || "")}" data-id="${esc(g.id || "")}" data-title="${esc(g.title || "")}" data-by="${esc(g.by || "")}">${inner}</div>`;
     })
     .join("");
   const dots =
@@ -746,10 +752,13 @@ h1,h2{margin:0}
 .crumbs__current{color:var(--t-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60vw}
 
 /* Hero gallery */
-.hero{position:relative;height:min(560px,64vh);overflow:hidden;background:#141428}
+.hero{position:relative;height:min(680px,76vh);overflow:hidden;background:#15120E}
 .hero__track{display:flex;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1)}
-.hero__slide{flex:0 0 100%;height:100%;background:#141428 center/cover no-repeat}
-.hero__scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(0,0,0,.28) 44%,rgba(0,0,0,.7) 72%,rgba(0,0,0,.94) 100%)}
+.hero__slide{flex:0 0 100%;height:100%;position:relative;overflow:hidden;background:#15120E}
+.hero__field{position:absolute;inset:-120px;background:center/cover no-repeat;filter:blur(56px);opacity:.42}
+.hero__frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:72px 40px 168px}
+.hero__art{max-width:100%;max-height:100%;width:auto;height:auto;box-shadow:0 30px 60px rgba(0,0,0,.55),0 4px 12px rgba(0,0,0,.3)}
+.hero__scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(21,18,14,0) 62%,rgba(21,18,14,.85) 100%)}
 .hero__dots{position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;gap:8px;z-index:2}
 .hero__dot{width:8px;height:8px;padding:0;border:0;border-radius:5px;background:rgba(255,255,255,.5);cursor:pointer;transition:width .25s,background .25s}
 .hero__dot:hover{background:rgba(255,255,255,.85)}
@@ -881,7 +890,8 @@ h1,h2{margin:0}
 @media (max-width:768px){
   :root{--pad:20px}
   .nav__open-lg{display:none} .nav__open-sm{display:inline}
-  .hero{height:min(400px,52vh)}
+  .hero{height:min(520px,68vh)}
+  .hero__frame{padding:56px 16px 132px}
   .hero__title{padding:0 20px 26px} .hero__title h1{font-size:32px} .hero__title p{font-size:16px}
   .hero__dots{bottom:14px}
   .sec{padding:32px 20px}
