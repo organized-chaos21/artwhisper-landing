@@ -195,7 +195,7 @@ function renderPage(data, id, reqUrl) {
 <body>
   <header class="nav">
     <a class="nav__brand" href="https://artwhisper.app"><img class="nav__logo" src="/logo.png" alt="Art Whisper" width="30" height="30" /><span>Art Whisper</span></a>
-    <a class="nav__open" href="${PLAY_LINK}" target="_blank" rel="noopener"><span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}</a>
+    <a class="nav__open" data-store-cta href="${PLAY_LINK}" target="_blank" rel="noopener"><span class="nav__open-lg">Open in Art Whisper</span><span class="nav__open-sm">Open the App</span> ${ARROW}</a>
   </header>
 
   ${breadcrumb.nav}
@@ -215,7 +215,7 @@ function renderPage(data, id, reqUrl) {
   ${bio ? `<section class="sec bio">
     <span class="eyebrow eyebrow--muted">ABOUT</span>
     <p>${esc(bio)}</p>
-    <a class="gatecta" href="${PLAY_LINK}" target="_blank" rel="noopener">${LOCK}<span>Read ${esc(first)}'s full story in Art Whisper</span> ${ARROW}</a>
+    <a class="gatecta" data-store-cta href="${PLAY_LINK}" target="_blank" rel="noopener">${LOCK}<span>Read ${esc(first)}'s full story in Art Whisper</span> ${ARROW}</a>
   </section>` : ""}
 
   ${renderWorks(works, first, PLAY_LINK)}
@@ -231,7 +231,7 @@ function renderPage(data, id, reqUrl) {
 
   <footer class="foot"><span>© ${new Date().getFullYear()} Bright Star. All rights reserved.</span></footer>
 
-  <a class="stickybar" href="${PLAY_LINK}" target="_blank" rel="noopener">
+  <a class="stickybar" data-store-cta href="${PLAY_LINK}" target="_blank" rel="noopener">
     <span class="stickybar__left"><img class="stickybar__logo" src="/logo.png" alt="" width="32" height="32" /><strong>Open the App</strong></span>${ARROW}
   </a>
 
@@ -246,6 +246,7 @@ function renderPage(data, id, reqUrl) {
     </figure>
   </div>
 
+  ${storeScript(APP_STORE_LINK)}
   ${analyticsScript(id, name)}
   ${lightboxScript(id)}
   ${monitorScript(id, [{ kind: "portrait", url: portrait }])}
@@ -267,7 +268,7 @@ function renderWorks(works, first, playUrl) {
     </a>`;
   }).join("");
   const gate = remaining > 0
-    ? `<a class="gatecta" href="${playUrl}" target="_blank" rel="noopener">${LOCK}<span>See all of ${esc(first)}'s works in Art Whisper</span> ${ARROW}</a>`
+    ? `<a class="gatecta" data-store-cta href="${playUrl}" target="_blank" rel="noopener">${LOCK}<span>See all of ${esc(first)}'s works in Art Whisper</span> ${ARROW}</a>`
     : "";
   return `<section class="sec works"><span class="eyebrow eyebrow--muted">NOTABLE WORKS</span><div class="wgrid">${cards}</div>${gate}</section>`;
 }
@@ -295,7 +296,20 @@ function schema(a, name, desc, url, img) {
 }
 
 function renderNotFound() {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Artist not found · Art Whisper</title><meta name="robots" content="noindex" /><link rel="icon" type="image/svg+xml" href="/favicon.svg" /><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=Lora:wght@600&display=swap" rel="stylesheet" /><style>${STYLES}</style></head><body><main class="empty"><img class="empty__logo" src="/logo.png" alt="Art Whisper" width="60" height="60" /><h1>This artist isn't available</h1><p>The link may be mistyped. Explore artists, movements, and thousands of works in the app.</p><a class="empty__cta" href="${PLAY_URL}" target="_blank" rel="noopener">Get the app ${ARROW}</a><a class="empty__home" href="https://artwhisper.app">Back to artwhisper.app</a></main></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Artist not found · Art Whisper</title><meta name="robots" content="noindex" /><link rel="icon" type="image/svg+xml" href="/favicon.svg" /><link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600&family=Lora:wght@600&display=swap" rel="stylesheet" /><style>${STYLES}</style></head><body><main class="empty"><img class="empty__logo" src="/logo.png" alt="Art Whisper" width="60" height="60" /><h1>This artist isn't available</h1><p>The link may be mistyped. Explore artists, movements, and thousands of works in the app.</p><a class="empty__cta" data-store-cta href="${PLAY_URL}" target="_blank" rel="noopener">Get the app ${ARROW}</a><a class="empty__home" href="https://artwhisper.app">Back to artwhisper.app</a></main>${storeScript(APP_STORE_URL)}</body></html>`;
+}
+
+// Every [data-store-cta] goes to the App Store on Apple devices (iPhone, iPad incl.
+// iPadOS, Mac); the HTML default is Google Play with the deferred deep-link referrer.
+// Client-side because the page is edge-cached for everyone (T1-906/T1-907). The
+// explicit Google Play / App Store badges are left as they are.
+function storeScript(appStoreUrl) {
+  return `<script>(function(){
+  var ua=navigator.userAgent||"",pf=navigator.platform||"";
+  if(!(/iPad|iPhone|iPod/.test(ua)||/Mac/.test(pf)||/Mac OS X/.test(ua)))return;
+  var u=${JSON.stringify(appStoreUrl)};
+  document.querySelectorAll("[data-store-cta]").forEach(function(a){a.href=u});
+})();</script>`;
 }
 
 function analyticsScript(id, name) {
