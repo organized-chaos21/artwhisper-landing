@@ -364,7 +364,7 @@ function renderPage(data, slug, reqUrl) {
 function renderHero(name, subtitle, gallery) {
   const items = gallery.length ? gallery : [null];
   const slides = items
-    .map((g) => {
+    .map((g, i) => {
       if (!g) return `<div class="hero__slide"></div>`;
       const c = cssUrl(g.url);
       const full = cssUrl(g.full || g.url);
@@ -373,7 +373,7 @@ function renderHero(name, subtitle, gallery) {
       // blurred copy of itself. The large image falls back to the small one.
       const art = full || c;
       const inner = c
-        ? `<span class="hero__field" style="background-image:url('${c}')"></span><span class="hero__frame"><img class="hero__art" src="${esc(art)}" alt="${esc(g.title || "")}" data-f="${esc(art !== c ? c : "")}" onerror="if(this.dataset.f){this.src=this.dataset.f;this.dataset.f=''}" decoding="async" /></span>`
+        ? `<span class="hero__field" style="background-image:url('${c}')"></span><span class="hero__frame"><img class="hero__art" src="${esc(art)}" alt="${esc(g.title || "")}" data-f="${esc(art !== c ? c : "")}" onerror="if(this.dataset.f){this.src=this.dataset.f;this.dataset.f=''}" decoding="async"${i > 0 ? ' loading="lazy"' : ""} /></span>`
         : "";
       return `<div class="hero__slide" data-full="${esc(full || "")}" data-orig="${esc(orig || "")}" data-id="${esc(g.id || "")}" data-title="${esc(g.title || "")}" data-by="${esc(g.by || "")}">${inner}</div>`;
     })
