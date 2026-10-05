@@ -301,6 +301,11 @@ function renderPage(data, slug, reqUrl, related) {
         moreHref: SLUG_RE.test(related.movement.slug || "") ? `/movement/${related.movement.slug}` : null,
       })
     : "";
+  const explore = renderExplore(related?.explore, {
+    title,
+    artistName,
+    movementName: related?.movement?.name || null,
+  });
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -350,6 +355,7 @@ function renderPage(data, slug, reqUrl, related) {
   ${artistSection}
   ${further}
   ${fromMovement}
+  ${explore}
   </main>
 
   <footer class="foot">
@@ -369,6 +375,7 @@ function renderPage(data, slug, reqUrl, related) {
   ${viewerScript(slug)}
   ${noticeScript(slug)}
   ${railScript(slug)}
+  ${exploreScript()}
   ${analyticsScript(slug, title)}
   ${monitorScript(slug, [
     { kind: "hero", url: heroImg },
@@ -835,6 +842,65 @@ function renderWorksRail({ key, eyebrow: eb, heading, works, withArtist, moreHre
   </section>`;
 }
 
+// "More works to explore" (T1-847, Pencil "Artwork Page v1.2"): a grid of works
+// beyond this artist and the movement row, each tagged with why it's here — same era
+// or one of the work's other movements. 8 show; "Show 8 more" reveals the rest (all
+// are in the HTML, so every card is a crawlable internal link). Chips filter by reason.
+const EXPLORE_MIN = 4;
+const EXPLORE_PAGE = 8;
+function renderExplore(explore, { title, artistName, movementName }) {
+  const list = (Array.isArray(explore?.works) ? explore.works : []).filter(
+    (w) => w && SLUG_RE.test(w.slug || "") && (w.reason === "era" || w.reason === "movement"),
+  );
+  if (list.length < EXPLORE_MIN) return "";
+  const year = Number.isFinite(explore.year) ? explore.year : null;
+  // "1850s–1880s" for a work from 1866 (the API's window is ±15 years).
+  const era = year ? `${Math.floor((year - 15) / 10) * 10}s–${Math.floor((year + 15) / 10) * 10}s` : "";
+  const why = (w) =>
+    w.reason === "era" ? `Same era${era ? ` · ${era}` : ""}` : `Same movement${w.movement_name ? ` · ${w.movement_name}` : ""}`;
+  const cards = list
+    .map((w, i) => {
+      const img = w.image_url && /^https?:\/\//.test(w.image_url) ? w.image_url : null;
+      const sub = [w.artist_name, w.year, w.museum_name].filter(Boolean).map((x) => esc(String(x))).join(" · ");
+      return `<a class="wcard xcard" href="/a/${w.slug}" data-rail="explore" data-reason="${w.reason}"${i >= EXPLORE_PAGE ? " hidden" : ""}>
+        <span class="wcard__img">${img ? `<img src="${esc(img)}" alt="${esc(w.title)}" loading="lazy" decoding="async" />` : ""}</span>
+        <span class="xcard__why">${esc(why(w))}</span>
+        <span class="wcard__t">${esc(w.title)}</span>
+        ${sub ? `<span class="wcard__s">${sub}</span>` : ""}
+      </a>`;
+    })
+    .join("");
+  const hasEra = list.some((w) => w.reason === "era");
+  const hasMovement = list.some((w) => w.reason === "movement");
+  const chips =
+    hasEra && hasMovement
+      ? `<div class="xchips" role="group" aria-label="Filter works">${[
+          ["all", "All"],
+          ["era", "Same era"],
+          ["movement", "Same movement"],
+        ]
+          .map(([k, l]) => `<button type="button" class="xchip" data-x-filter="${k}" aria-pressed="${k === "all"}">${l}</button>`)
+          .join("")}</div>`
+      : "";
+  const beyond = [artistName ? surname(artistName) : null, movementName].filter(Boolean).join(" and ");
+  const what = [hasEra ? "from the same years" : null, hasMovement ? `from the other movements ${title} belongs to` : null]
+    .filter(Boolean)
+    .join(", and ");
+  const sub = `${beyond ? `Beyond ${beyond}: works` : "Works"} ${what}.`;
+  const more =
+    list.length > EXPLORE_PAGE
+      ? `<div class="xmore"><button type="button" class="xmore__btn">Show ${Math.min(EXPLORE_PAGE, list.length - EXPLORE_PAGE)} more works</button></div>`
+      : "";
+  return `<section class="sec works explore" data-key="explore">
+    <div class="works__head">
+      <div>${eyebrow("KEEP EXPLORING")}<h2>More works to explore</h2><p class="explore__sub">${esc(sub)}</p></div>
+      ${chips}
+    </div>
+    <div class="xgrid">${cards}</div>
+    ${more}
+  </section>`;
+}
+
 function renderNotFound() {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1054,6 +1120,11 @@ function noticeScript(slug) {
   var sx=null; cap.addEventListener("touchstart",function(e){ sx=e.touches[0].clientX; },{passive:true});
   cap.addEventListener("touchend",function(e){ if(sx==null) return; var dx=e.changedTouches[0].clientX-sx; sx=null; if(Math.abs(dx)>40){ stopTour(); step(dx<0?1:-1); } },{passive:true});
   window.addEventListener("resize",function(){ if(sel>=0&&pts[sel].b&&!zoomed) placeCaption(pts[sel].b); });
+  // v1.2 (T1-847): the list is locked to the painting's height; when the painting is
+  // too short to give each point ~88px (panoramas), stack the list under it instead.
+  function fit(){ if(!img.naturalWidth) return; sec.classList.toggle("nt-flow",fig.offsetHeight<cards.length*88); }
+  if(img.complete) fit(); else img.addEventListener("load",fit);
+  window.addEventListener("resize",fit);
 })();</script>`;
 }
 
@@ -1081,6 +1152,26 @@ function railScript() {
   });
   document.addEventListener("click",function(e){ var a=e.target.closest&&e.target.closest("a.wcard"); if(!a) return;
     try{if(window.__awTrack)window.__awTrack("related_work_clicked",{rail:a.getAttribute("data-rail"),to:a.getAttribute("href")})}catch(_){} });
+})();</script>`;
+}
+
+// ─── "More works to explore": chips filter by reason, "Show more" reveals 8 more (T1-847) ──
+function exploreScript() {
+  return `<script>(function(){
+  var sec=document.querySelector(".explore"); if(!sec) return;
+  var cards=[].slice.call(sec.querySelectorAll(".xcard")),chips=[].slice.call(sec.querySelectorAll(".xchip")),btn=sec.querySelector(".xmore__btn");
+  var filter="all",limit=${EXPLORE_PAGE};
+  function track(ev,p){ try{ if(window.__awTrack) window.__awTrack(ev,p||{}) }catch(e){} }
+  function render(){
+    var match=cards.filter(function(c){ return filter==="all"||c.getAttribute("data-reason")===filter; });
+    cards.forEach(function(c){ c.hidden=true; }); match.forEach(function(c,i){ c.hidden=i>=limit; });
+    var left=match.length-limit;
+    if(btn){ btn.parentNode.hidden=left<=0; btn.textContent="Show "+Math.min(${EXPLORE_PAGE},Math.max(left,0))+" more works"; }
+    chips.forEach(function(c){ c.setAttribute("aria-pressed",String(c.getAttribute("data-x-filter")===filter)); });
+  }
+  chips.forEach(function(c){ c.addEventListener("click",function(){ filter=c.getAttribute("data-x-filter"); limit=${EXPLORE_PAGE}; render(); track("explore_filter",{filter:filter}); }); });
+  if(btn) btn.addEventListener("click",function(){ limit+=${EXPLORE_PAGE}; render(); track("explore_more",{filter:filter,shown:limit}); });
+  render();
 })();</script>`;
 }
 
@@ -1342,6 +1433,22 @@ body[data-shape="landscape"] .ncard__num{font-size:22px}
 .rail__dots{display:flex;justify-content:center;gap:7px;margin-top:22px}
 .rail__dots i{width:7px;height:7px;border-radius:4px;background:#CDC6B6;transition:width .2s,background .2s}
 .rail__dots i.on{width:22px;background:var(--ink)}
+/* More works to explore (T1-847) */
+.explore__sub{margin:14px 0 0;font-size:17px;line-height:1.6;color:var(--sub)}
+.xchips{display:flex;flex-wrap:wrap;gap:10px;flex:none}
+.xchip{padding:10px 16px;border-radius:20px;border:1px solid #D6CFBF;background:var(--card);color:#3A352E;font:400 13px var(--sans);cursor:pointer;transition:background .15s,border-color .15s}
+.xchip:hover{border-color:var(--gold)}
+.xchip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.xgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.xgrid .wcard{flex:none}
+.xgrid .wcard[hidden]{display:none}
+.xgrid .wcard__img{height:280px}
+.xcard__why{margin-bottom:6px;font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--brown)}
+.xmore{display:flex;justify-content:center;margin-top:28px}
+.xmore[hidden]{display:none}
+.xmore__btn{padding:14px 26px;border-radius:24px;border:1px solid #C3BBAA;background:none;color:#3A352E;font:600 11px var(--sans);letter-spacing:1.4px;text-transform:uppercase;cursor:pointer}
+.xmore__btn:hover{background:var(--card)}
+.xchip:focus-visible,.xmore__btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 /* Footer */
 .foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;max-width:1760px;margin:0 auto;
@@ -1379,6 +1486,8 @@ body[data-shape="landscape"] .ncard__num{font-size:22px}
   .notice__head,body[data-shape="landscape"] .notice__head{padding-top:0;margin-bottom:24px}
   .notice__img img{max-height:640px;margin:0 auto}
   .wcard{flex-basis:calc((100% - 40px) / 3)}
+  .xgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .explore .works__head{flex-direction:column;align-items:flex-start}
   .audio__card{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:768px){
@@ -1466,6 +1575,13 @@ body[data-shape="landscape"] .ncard__num{font-size:22px}
   .wcard__img{height:200px;align-items:flex-end;justify-content:flex-start;margin-bottom:10px}
   .wcard__t{font-size:16px}
   .wcard__s{font-size:12px}
+  .explore__sub{font-size:15px;margin-top:10px}
+  .xchips{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .xchips::-webkit-scrollbar{display:none}
+  .xchip{flex:none;padding:8px 14px}
+  .xgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 12px}
+  .xgrid .wcard__img{height:200px;justify-content:center}
+  .xcard__why{font-size:9px;letter-spacing:1.1px}
   .foot{flex-direction:column;align-items:flex-start;padding:32px 20px 112px;font-size:13px}
   /* Sticky "hear the story" bar */
   .stickybar{display:flex;align-items:center;gap:12px;position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:50;
@@ -1543,6 +1659,29 @@ body[data-shape="landscape"] .ncard__num{font-size:22px}
 .nt-card:focus-within,.nt-marker:focus-visible,.nt-bar button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.nt-img,.nt-spot,.nt-marker{transition:none}.nt-marker.pulse{animation:none}}
 @media (max-width:1439px){ .nt .ncards{grid-template-columns:minmax(0,1fr)} }
+/* v1.2 (T1-847): heading across the top; the points become a compact list exactly as
+   tall as the painting (contain:size → the grid row takes the figure's height, the list
+   stretches to it, rows share it). Notes clamp to 2 lines — the full text is in the
+   caption on the painting. Too short for the list (panoramas) → .nt-flow stacks. */
+@media (min-width:1101px){
+  .nt.notice{grid-template-areas:"head head" "img cards";grid-template-rows:auto auto}
+  .nt .notice__head{padding-top:0;margin-bottom:28px}
+  .nt .notice__head h2{margin-top:12px}
+  .nt .notice__intro{margin-top:4px}
+  .nt .ncards.nt-cards{display:flex;flex-direction:column;gap:10px;margin-top:0;align-self:stretch;contain:size}
+  .nt .ncard.nt-card{flex:1 1 0;min-height:0;overflow:hidden;display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;
+    align-content:center;column-gap:20px;row-gap:2px;padding:10px 22px}
+  .nt .nt-card__top{display:contents}
+  .nt .nt-card .ncard__num{grid-column:1;grid-row:1 / span 2;align-self:center;min-width:32px;font-size:24px}
+  .nt .nt-card .nt-chip{grid-column:3;grid-row:1 / span 2;align-self:center}
+  .nt .nt-card__title{grid-column:2;grid-row:1}
+  .nt .nt-card p{grid-column:2;grid-row:2;font-size:14px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .nt .nt-card .nt-card__step{display:none}
+  .nt .nt-card.is-sel{background:#F5EEDF}
+  .nt.nt-flow.notice{grid-template-columns:minmax(0,1fr);grid-template-areas:"head" "img" "cards"}
+  .nt.nt-flow .ncards.nt-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));contain:none;margin-top:20px}
+  .nt.nt-flow .ncard.nt-card{min-height:88px}
+}
 @media (max-width:768px){
   .nt-figure{display:flex;flex-direction:column}
   .nt-stage{display:block}
