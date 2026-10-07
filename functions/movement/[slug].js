@@ -304,7 +304,7 @@ function renderPage(data, slug, reqUrl, allMovements = []) {
   const pushArt = (o, by) => {
     if (!o?.image_url || !o.id || seenArt.has(o.id)) return;
     seenArt.add(o.id);
-    gallery.push({ sm: o.image_url, lg: lgUrl(o.image_url), id: o.id, title: o.title || "", by });
+    gallery.push({ sm: o.image_url, lg: lgUrl(o.image_url), id: o.id, href: artHref(o), title: o.title || "", by });
   };
   if (featured) pushArt(featured, [featured.artist_name, featured.year].filter(Boolean).join(", "));
   for (const w of works) {
@@ -399,6 +399,13 @@ function renderPage(data, slug, reqUrl, allMovements = []) {
 </html>`;
 }
 
+// Link an artwork only to its indexable page: /a/{slug} when it has a slug AND an image.
+// No slug → the UUID URL just 301s; no image → the page is noindex. Either way Google
+// crawls a dead end (T1-938), so those cards render without an href.
+function artHref(w) {
+  return w?.slug && w.image_url ? `/a/${encodeURIComponent(w.slug)}` : null;
+}
+
 // ─── sections ───────────────────────────────────────────────────────
 // Stage: the featured works as slides — each painting whole (never cropped) over a
 // blurred copy of itself. The header has its own strip at the top and the caption +
@@ -407,7 +414,7 @@ function renderStage({ name, period, origin, gallery, breadcrumb, playUrl }) {
   const slides = gallery
     .map((g, i) => {
       const field = cssUrl(g.sm);
-      return `<div class="slide${i === 0 ? " is-on" : ""}" data-i="${i}" data-id="${esc(g.id)}" data-title="${esc(g.title)}" data-by="${esc(g.by)}">
+      return `<div class="slide${i === 0 ? " is-on" : ""}" data-i="${i}" data-id="${esc(g.id)}" data-href="${esc(g.href || "")}" data-title="${esc(g.title)}" data-by="${esc(g.by)}">
         ${field ? `<div class="stage__field" style="background-image:url('${field}')" aria-hidden="true"></div>` : ""}
         <div class="stage__vignette" aria-hidden="true"></div>
         <div class="stage__frame"><img class="stage__img" src="${esc(g.lg)}" data-f="${esc(g.lg !== g.sm ? g.sm : "")}" onerror="if(this.dataset.f){this.src=this.dataset.f;this.dataset.f=''}" alt="${esc(g.title)}${g.by ? ` — ${esc(g.by)}` : ""}"${i === 0 ? ' fetchpriority="high"' : ' loading="lazy"'} decoding="async" draggable="false" /></div>
@@ -444,7 +451,7 @@ function renderStage({ name, period, origin, gallery, breadcrumb, playUrl }) {
         <span class="stage__eyebrow">ART MOVEMENT</span>
         <h1>${esc(name)}</h1>
         ${meta ? `<p>${esc(meta)}</p>` : ""}
-        ${first ? `<p class="stage__feat">Featured: <a class="stage__feat-link" href="/a/${esc(first.id)}">${esc(first.title)}</a><span class="stage__feat-by">${first.by ? `, ${esc(first.by)}` : ""}</span></p>` : ""}
+        ${first ? `<p class="stage__feat">Featured: <a class="stage__feat-link"${first.href ? ` href="${esc(first.href)}"` : ""}>${esc(first.title)}</a><span class="stage__feat-by">${first.by ? `, ${esc(first.by)}` : ""}</span></p>` : ""}
       </div>
       ${controls}
     </div>
@@ -565,7 +572,7 @@ function renderSpot(spot, img, name) {
       <p class="notice__intro">${intro}</p>
     </div>
     <div class="notice__row">
-      ${img ? `<a class="notice__img" href="/a/${esc(img.id)}"><img src="${esc(img.lg)}" data-f="${esc(img.lg !== img.sm ? img.sm : "")}" onerror="if(this.dataset.f){this.src=this.dataset.f;this.dataset.f=''}" alt="${esc(img.title)}" loading="lazy" decoding="async" /></a>` : ""}
+      ${img ? `<a class="notice__img"${img.href ? ` href="${esc(img.href)}"` : ""}><img src="${esc(img.lg)}" data-f="${esc(img.lg !== img.sm ? img.sm : "")}" onerror="if(this.dataset.f){this.src=this.dataset.f;this.dataset.f=''}" alt="${esc(img.title)}" loading="lazy" decoding="async" /></a>` : ""}
       <div class="ncards">${cards}</div>
     </div>
   </section>`;
@@ -621,7 +628,8 @@ function renderWorksRail(works) {
     .map((w) => {
       const img = w.image_url && /^https?:\/\//.test(w.image_url) ? w.image_url : null;
       const sub = [w.artist_name, w.year, w.museum_name].filter(Boolean).map((s) => esc(String(s))).join(" · ");
-      return `<a class="wcard" href="/a/${esc(w.id)}">
+      const href = artHref(w);
+      return `<a class="wcard"${href ? ` href="${esc(href)}"` : ""}>
         <span class="wcard__img">${img ? `<img src="${esc(img)}" alt="${esc(w.title)}" loading="lazy" decoding="async" />` : ""}</span>
         <span class="wcard__t">${esc(w.title)}</span>
         ${sub ? `<span class="wcard__s">${sub}</span>` : ""}
@@ -723,7 +731,7 @@ function stageScript(slug) {
   function go(k,via){ i=((k%n)+n)%n;
     Array.prototype.forEach.call(slides,function(s,j){s.classList.toggle("is-on",j===i)});
     Array.prototype.forEach.call(dots,function(d,j){d.classList.toggle("is-on",j===i)});
-    var s=slides[i]; if(feat){feat.textContent=s.getAttribute("data-title")||"";feat.setAttribute("href","/a/"+s.getAttribute("data-id"));}
+    var s=slides[i]; if(feat){feat.textContent=s.getAttribute("data-title")||"";var h=s.getAttribute("data-href");if(h)feat.setAttribute("href",h);else feat.removeAttribute("href");}
     if(by){var b=s.getAttribute("data-by");by.textContent=b?", "+b:"";}
     if(via) track("movement_stage_slide",{slug:${JSON.stringify(slug)},to:i,via:via}); }
   function stop(){ if(timer){clearInterval(timer);timer=null;} }
@@ -1070,6 +1078,7 @@ a.chip:hover{background:#F5EEDF;border-color:var(--gold)}
 .wcard{flex:0 0 calc((100% - 60px) / 4);scroll-snap-align:start;display:flex;flex-direction:column;padding:19px 19px 21px;border-radius:6px;
   background:var(--card);border:1px solid var(--line);text-decoration:none;transition:border-color .15s,transform .15s}
 .wcard:hover{border-color:var(--chip-line);transform:translateY(-2px)}
+.wcard:not([href]):hover{border-color:var(--line);transform:none}
 .wcard__img{height:320px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:14px}
 .wcard__img img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:2px;box-shadow:0 14px 12px -6px rgba(50,42,30,.45)}
 .wcard__t{font-family:var(--serif);font-size:21px;line-height:1.2;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
