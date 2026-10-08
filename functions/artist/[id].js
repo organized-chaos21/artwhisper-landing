@@ -261,7 +261,9 @@ function renderWorks(works, first, playUrl) {
   const cards = shown.map((w) => {
     const c = cssUrl(w.image_url);
     const meta = [w.year, w.museum_name].filter(Boolean).join(" · ");
-    return `<a class="wcard" href="/a/${esc(w.id)}">
+    // Image-less works have a noindex page — no link; prefer the slug over the UUID (T1-938).
+    const href = w.image_url && w.id ? `/a/${encodeURIComponent(w.slug || w.id)}` : null;
+    return `<a class="wcard"${href ? ` href="${esc(href)}"` : ""}>
       <span class="wcard__img"${c ? ` style="background-image:url('${c}')"` : ""}></span>
       <span class="wcard__t">${esc(w.title || "")}</span>
       ${meta ? `<span class="wcard__m">${esc(meta)}</span>` : ""}
@@ -398,7 +400,7 @@ img{max-width:100%;display:block}a{color:inherit;text-decoration:none}h1,h2{marg
 .bio p{margin:0;max-width:820px;font-size:16.5px;line-height:1.75;color:var(--t-body)}
 .gatecta{display:inline-flex;align-items:center;gap:8px;margin-top:18px;color:var(--gold);font-size:14px;font-weight:500}
 .wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.wcard{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s}.wcard:hover{box-shadow:0 6px 20px rgba(26,20,13,.08)}
+.wcard{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:box-shadow .2s}.wcard:hover{box-shadow:0 6px 20px rgba(26,20,13,.08)}.wcard:not([href]):hover{box-shadow:none}
 .wcard__img{height:180px;background:#E8E4DF center/cover no-repeat}
 .wcard__t{padding:14px 16px 2px;font-family:var(--serif);font-weight:600;font-size:16px;color:var(--t-primary)}
 .wcard__m{padding:0 16px 16px;font-size:13px;color:var(--t-secondary)}
