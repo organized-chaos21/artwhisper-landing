@@ -399,11 +399,12 @@ function renderPage(data, slug, reqUrl, allMovements = []) {
 </html>`;
 }
 
-// Link an artwork only to its indexable page: /a/{slug} when it has a slug AND an image.
-// No slug → the UUID URL just 301s; no image → the page is noindex. Either way Google
-// crawls a dead end (T1-938), so those cards render without an href.
+// Link an artwork only when its page is indexable (T1-938): no image → the /a/ page is
+// noindex, so the card renders without an href. Prefer the slug — a UUID URL 301s to it
+// when one exists; a slug-less work's UUID URL is its own canonical (200).
 function artHref(w) {
-  return w?.slug && w.image_url ? `/a/${encodeURIComponent(w.slug)}` : null;
+  if (!w?.image_url || !w.id) return null;
+  return `/a/${encodeURIComponent(w.slug || w.id)}`;
 }
 
 // ─── sections ───────────────────────────────────────────────────────

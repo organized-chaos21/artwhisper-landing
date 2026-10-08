@@ -261,8 +261,8 @@ function renderWorks(works, first, playUrl) {
   const cards = shown.map((w) => {
     const c = cssUrl(w.image_url);
     const meta = [w.year, w.museum_name].filter(Boolean).join(" · ");
-    // Only link indexable artwork pages (slug + image); see T1-938.
-    const href = w.slug && w.image_url ? `/a/${encodeURIComponent(w.slug)}` : null;
+    // Image-less works have a noindex page — no link; prefer the slug over the UUID (T1-938).
+    const href = w.image_url && w.id ? `/a/${encodeURIComponent(w.slug || w.id)}` : null;
     return `<a class="wcard"${href ? ` href="${esc(href)}"` : ""}>
       <span class="wcard__img"${c ? ` style="background-image:url('${c}')"` : ""}></span>
       <span class="wcard__t">${esc(w.title || "")}</span>
